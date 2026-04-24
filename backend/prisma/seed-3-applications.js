@@ -1,4 +1,4 @@
-// seed-3-applications-fast.js - BATCH INSERT with UNIQUE reference numbers
+// seed-3-applicationsjs - BATCH INSERT
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
@@ -8,7 +8,11 @@ const BATCH_SIZE = 500;
 
 let appCounter = 1;
 let usedOmangs = new Set();
+let usedEmails = new Set();
 let userNumberCounter = 1;
+
+// Valid email domains
+const EMAIL_DOMAINS = ['gmail.com', 'outlook.com', 'yahoo.com', 'protonmail.com'];
 
 function generateApplicationNumber(year) { 
   return `APP${year}${(appCounter++).toString().padStart(6, '0')}`; 
@@ -16,6 +20,23 @@ function generateApplicationNumber(year) {
 
 function generateReferenceNumber() {
   return `REF${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
+}
+
+function generateUniqueEmail(firstName, lastName) {
+  let email;
+  let attempts = 0;
+  do {
+    const domain = EMAIL_DOMAINS[Math.floor(Math.random() * EMAIL_DOMAINS.length)];
+    const randomSuffix = Math.random().toString(36).substring(2, 5);
+    email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${randomSuffix}@${domain}`;
+    attempts++;
+    if (attempts > 20) {
+      email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Date.now()}@gmail.com`;
+      break;
+    }
+  } while (usedEmails.has(email));
+  usedEmails.add(email);
+  return email;
 }
 
 function generateUniqueOmang(gender) {
@@ -30,6 +51,12 @@ function generateUniqueOmang(gender) {
   } while (usedOmangs.has(omangNumber));
   usedOmangs.add(omangNumber);
   return omangNumber;
+}
+
+function generatePhoneNumber() {
+  // Generate exactly 8 digits starting with 7
+  const next7 = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+  return `7${next7}`;
 }
 
 function randomDate(startYear, endYear) { 
@@ -89,9 +116,12 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash('Password123', 10);
   
-  // Load existing OMANGs
-  const existing = await prisma.user.findMany({ select: { omangNumber: true } });
-  existing.forEach(u => { if (u.omangNumber) usedOmangs.add(u.omangNumber); });
+  // Load existing OMANGs and Emails
+  const existingUsers = await prisma.user.findMany({ select: { omangNumber: true, email: true } });
+  existingUsers.forEach(u => {
+    if (u.omangNumber) usedOmangs.add(u.omangNumber);
+    if (u.email) usedEmails.add(u.email);
+  });
   
   // Get last user number
   const lastUser = await prisma.user.findFirst({ orderBy: { userNumber: 'desc' } });
@@ -123,7 +153,6 @@ async function main() {
       const adjustedWaitMonths = Math.round(backlog.avgWaitMonths * waitModifier);
       const submittedAt = randomDate(2018, 2025);
       
-      // Status distribution
       let status = 'SUBMITTED';
       const r = Math.random();
       if (r < 0.12) status = 'APPROVED';
@@ -146,15 +175,17 @@ async function main() {
       const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
       const omangNumber = generateUniqueOmang(gender);
       const userNumber = await getNextUserNumber();
-      const uniqueSuffix = `${Date.now()}${Math.random().toString(36).substring(2, 6)}${i}`;
+      
+      // Generate clean email with real domain
+      const email = generateUniqueEmail(firstName, lastName);
       
       batchUsers.push({
         userNumber,
-        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${uniqueSuffix}@example.com`,
+        email,
         password: hashedPassword,
         fullName: `${firstName} ${lastName}`,
         omangNumber,
-        phone: `7${Math.random().toString().slice(2, 9)}`,
+        phone: generatePhoneNumber(),
         role: 'APPLICANT',
         emailVerified: true,
         createdAt: randomDate(2015, 2024),
@@ -179,12 +210,9 @@ async function main() {
       
       totalApps++;
       
-      // Execute batch
       if (batchUsers.length >= BATCH_SIZE) {
-        // Insert users
         await prisma.user.createMany({ data: batchUsers, skipDuplicates: true });
         
-        // Fetch created users to get IDs
         const emails = batchUsers.map(u => u.email);
         const createdUsers = await prisma.user.findMany({
           where: { email: { in: emails } },
@@ -193,7 +221,6 @@ async function main() {
         
         const emailToId = new Map(createdUsers.map(u => [u.email, u.userId]));
         
-        // Match apps with user IDs
         const appsWithIds = batchApps.map((app, idx) => ({
           ...app,
           userId: emailToId.get(batchUsers[idx]?.email)
@@ -206,13 +233,11 @@ async function main() {
         cumulativeApps += batchUsers.length;
         console.log(`     ✅ ${cumulativeApps.toLocaleString()} apps created`);
         
-        // Clear batches
         batchUsers.length = 0;
         batchApps.length = 0;
       }
     }
     
-    // Final batch for this board
     if (batchUsers.length > 0) {
       await prisma.user.createMany({ data: batchUsers, skipDuplicates: true });
       
