@@ -1,0 +1,23 @@
+KABODITSHA TEST ACCOUNTS
+
+Password for all: Password123
+
+APPLICANTS:
+   Kgatleng: boitumelo.smith.0.8757@botswana.co.bw
+   Kgatleng: kabelo.mokgosi.1.8625@yahoo.com
+   Malete:   tshepo.molefe.4.6750@yahoo.com
+   Malete:   kgosi.kelebeng.5.4094@btc.bw
+
+STAFF:
+   Kgatleng: lorato.kgafela.staff3@landboard.gov.bw
+   Malete:   bontle.williams.staff7@landboard.gov.bw
+
+MANAGERS:
+   Kgatleng: tumelo.montsho.manager2@landboard.gov.bw
+   Malete:   kgosi.brown.manager5@landboard.gov.bw
+
+ADMIN:
+   admin0.7014@kaboditsha.gov.bw
+
+
+   supabase db password: KaboDitsha123

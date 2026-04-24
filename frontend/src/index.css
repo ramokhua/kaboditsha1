@@ -1,0 +1,221 @@
+/* frontend/src/index.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary Colors - High Contrast */
+    --color-earth: #2C1810;      /* Dark Brown - Headers, primary text */
+    --color-terracotta: #B45F3A;  /* Medium Brown - Buttons, accents */
+    --color-sand: #F5E6D3;        /* Light Beige - Backgrounds */
+    --color-stone: #4A4A4A;       /* Dark Gray - Body text */
+    --color-forest: #1F4A2B;      /* Dark Green - Success states */
+    --color-clay: #8B4513;        /* Saddle Brown - Borders */
+    
+    /* Status Colors */
+    --color-success: #1F7A3B;     /* Green - Success messages */
+    --color-warning: #B76E2E;      /* Orange - Warnings */
+    --color-error: #B22222;        /* Dark Red - Errors */
+    --color-info: #2C5F8A;         /* Blue - Information */
+    
+    /* Text Colors - High Contrast */
+    --text-primary: #1A1A1A;       /* Almost Black - Primary text */
+    --text-secondary: #2C2C2C;      /* Dark Gray - Secondary text */
+    --text-light: #4A4A4A;          /* Medium Gray - Light text on dark bg */
+    --text-white: #FFFFFF;          /* White text */
+  }
+  
+  body {
+    @apply bg-[#F5E6D3] text-[#1A1A1A] font-sans;
+    background-image: radial-gradient(circle at 10% 20%, rgba(139, 69, 19, 0.03) 0%, transparent 20%);
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-bold tracking-tight text-[#2C1810];
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+}
+
+@layer components {
+  /* Buttons - High Contrast */
+  .btn-primary {
+    @apply bg-[#2C1810] text-white px-6 py-3 rounded-lg 
+           hover:bg-[#3A241C] transition-all duration-200 
+           font-semibold shadow-md hover:shadow-lg
+           focus:ring-2 focus:ring-[#2C1810]/50 focus:outline-none;
+  }
+  
+  .btn-secondary {
+    @apply bg-[#B45F3A] text-white px-6 py-3 rounded-lg 
+           hover:bg-[#9E4F2E] transition-all duration-200 
+           font-semibold shadow-md hover:shadow-lg
+           focus:ring-2 focus:ring-[#B45F3A]/50 focus:outline-none;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-[#2C1810] text-[#2C1810] px-6 py-3 rounded-lg 
+           hover:bg-[#2C1810]/10 transition-all duration-200 
+           font-semibold focus:ring-2 focus:ring-[#2C1810]/50;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white/95 backdrop-blur-sm rounded-xl shadow-lg 
+           border border-[#8B4513]/20 p-6
+           hover:shadow-xl transition-shadow duration-300;
+  }
+  
+  .stat-card {
+    @apply bg-white rounded-xl shadow-md p-6 border-l-4 border-[#2C1810];
+  }
+
+  /* Form elements - High Contrast */
+  .input-field {
+    @apply w-full border-2 border-[#8B4513]/30 rounded-lg p-3 
+           bg-white focus:bg-white
+           focus:ring-2 focus:ring-[#2C1810]/50 focus:border-[#2C1810]
+           transition-all duration-200 text-[#1A1A1A];
+  }
+  
+  .input-label {
+    @apply block text-[#2C1810] font-semibold mb-2 text-sm uppercase tracking-wide;
+  }
+  
+  .input-error {
+    @apply text-[#B22222] text-sm mt-1 font-medium;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply px-4 py-2 text-[#2C1810] font-medium hover:text-[#B45F3A] 
+           transition-colors duration-200 relative;
+  }
+  
+  .nav-link-active {
+    @apply text-[#B45F3A] font-bold after:content-[''] after:absolute after:bottom-0 
+           after:left-4 after:right-4 after:h-0.5 after:bg-[#B45F3A];
+  }
+
+  /* Badges */
+  .badge {
+    @apply px-3 py-1 rounded-full text-sm font-semibold inline-flex items-center;
+  }
+  
+  .badge-success {
+    @apply bg-[#1F7A3B]/10 text-[#1F7A3B] border border-[#1F7A3B]/30;
+  }
+  
+  .badge-warning {
+    @apply bg-[#B76E2E]/10 text-[#B76E2E] border border-[#B76E2E]/30;
+  }
+  
+  .badge-error {
+    @apply bg-[#B22222]/10 text-[#B22222] border border-[#B22222]/30;
+  }
+  
+  .badge-info {
+    @apply bg-[#2C5F8A]/10 text-[#2C5F8A] border border-[#2C5F8A]/30;
+  }
+
+  /* Alerts */
+  .alert {
+    @apply px-4 py-3 rounded-lg font-medium border;
+  }
+  
+  .alert-success {
+    @apply bg-[#1F7A3B]/10 border-[#1F7A3B] text-[#1F7A3B];
+  }
+  
+  .alert-error {
+    @apply bg-[#B22222]/10 border-[#B22222] text-[#B22222];
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply border-4 border-[#8B4513]/20 border-t-4 border-t-[#2C1810] rounded-full w-10 h-10;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+@media print {
+  body {
+    background-color: white;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .dashboard-container {
+    background-color: white !important;
+  }
+}
+
+/* Leaflet map marker animations */
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+.custom-user-marker div {
+  animation: pulse 1.5s infinite;
+}
+
+.custom-board-marker div,
+.custom-recommended-marker div {
+  transition: transform 0.2s ease;
+}
+
+.custom-board-marker:hover div,
+.custom-recommended-marker:hover div {
+  transform: scale(1.2);
+}
+
+/* Fix for Leaflet marker icons */
+.leaflet-marker-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Remove default root styles that were interfering */
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}

@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  userId               String          @id @default(cuid()) @map("user_id")
+  userNumber           String          @unique @map("user_number")
+  email                String          @unique
+  password             String
+  fullName             String          @map("full_name")
+  omangNumber          Int             @unique @map("omang_number")
+  phone                String?
+  role                 Role            @default(APPLICANT)
+  emailVerified        Boolean         @default(false) @map("email_verified")
+  verificationToken    String?         @map("verification_token")
+  tokenExpiry          DateTime?       @map("token_expiry")
+  landBoardId          String?         @map("land_board_id")
+  maritalStatus        MaritalStatus?  @map("marital_status")
+  spouseName           String?         @map("spouse_name")
+  resetToken           String?         @map("reset_token")
+  resetTokenExpiry     DateTime?       @map("reset_token_expiry")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+  applicationsApproved Application[]   @relation("ApprovedBy")
+  applicationsReviewed Application[]   @relation("ReviewedBy")
+  applications         Application[]
+  auditLogs            AuditLog[]
+  documentsVerified    Document[]      @relation("DocumentVerifiedBy")
+  notifications        Notification[]
+  statusHistory        StatusHistory[] @relation("StatusHistoryUser")
+  assignedBoard        LandBoard?      @relation("StaffAtBoard", fields: [landBoardId], references: [landBoardId])
+
+  @@map("users")
+}
+
+model LandBoard {
+  landBoardId      String            @id @default(cuid()) @map("land_board_id")
+  boardNumber      String            @unique @map("board_number")
+  name             String
+  type             BoardType         @default(MAIN)
+  parentBoardId    String?           @map("parent_board_id")
+  region           String
+  jurisdiction     String?
+  officeAddress    String?           @map("office_address")
+  contactInfo      String?           @map("contact_info")
+  totalAllocations Int?              @default(0) @map("total_allocations")
+  monthlyRate      Int?              @default(0) @map("monthly_rate")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  applications     Application[]
+  parent           LandBoard?        @relation("SubToMain", fields: [parentBoardId], references: [landBoardId])
+  subBoards        LandBoard[]       @relation("SubToMain")
+  staff            User[]            @relation("StaffAtBoard")
+  waitingListStats WaitingListStat[]
+
+  @@map("land_boards")
+}
+
+model Application {
+  applicationId     String            @id @default(cuid()) @map("application_id")
+  applicationNumber String            @unique @map("application_number")
+  referenceNumber   String            @unique @map("reference_number")
+  userId            String            @map("user_id")
+  landBoardId       String            @map("land_board_id")
+  settlementType    SettlementType    @map("settlement_type")
+  status            ApplicationStatus @default(SUBMITTED)
+  queuePosition     Int?              @map("queue_position")
+  purpose           String?
+  submittedAt       DateTime          @default(now()) @map("submitted_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  reviewedBy        String?           @map("reviewed_by")
+  reviewedAt        DateTime?         @map("reviewed_at")
+  approvedBy        String?           @map("approved_by")
+  approvedAt        DateTime?         @map("approved_at")
+  rejectionReason   String?           @map("rejection_reason")
+  notes             String?
+  approver          User?             @relation("ApprovedBy", fields: [approvedBy], references: [userId])
+  landBoard         LandBoard         @relation(fields: [landBoardId], references: [landBoardId])
+  reviewer          User?             @relation("ReviewedBy", fields: [reviewedBy], references: [userId])
+  user              User              @relation(fields: [userId], references: [userId])
+  documents         Document[]
+  statusHistory     StatusHistory[]
+
+  @@index([userId])
+  @@index([landBoardId])
+  @@index([status])
+  @@map("applications")
+}
+
+model Document {
+  documentId         String             @id @default(cuid()) @map("document_id")
+  documentNumber     String             @unique @map("document_number")
+  applicationId      String             @map("application_id")
+  documentType       String             @map("document_type")
+  filename           String
+  filePath           String             @map("file_path")
+  fileSize           Int                @map("file_size")
+  mimeType           String             @map("mime_type")
+  uploadedAt         DateTime           @default(now()) @map("uploaded_at")
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  verifiedBy         String?            @map("verified_by")
+  verifiedAt         DateTime?          @map("verified_at")
+  rejectionReason    String?            @map("rejection_reason")
+  comments           String?
+  application        Application        @relation(fields: [applicationId], references: [applicationId])
+  verifier           User?              @relation("DocumentVerifiedBy", fields: [verifiedBy], references: [userId])
+
+  @@map("documents")
+}
+
+model Notification {
+  notificationId     String           @id @default(cuid()) @map("notification_id")
+  notificationNumber String           @unique @map("notification_number")
+  userId             String           @map("user_id")
+  type               NotificationType
+  subject            String
+  message            String
+  sentAt             DateTime         @default(now()) @map("sent_at")
+  readAt             DateTime?        @map("read_at")
+  user               User             @relation(fields: [userId], references: [userId])
+
+  @@map("notifications")
+}
+
+model WaitingListStat {
+  statId            String         @id @default(cuid()) @map("stat_id")
+  landBoardId       String         @map("land_board_id")
+  settlementType    SettlementType @map("settlement_type")
+  totalCount        Int            @default(0) @map("total_count")
+  eligibleCount     Int?           @default(0) @map("eligible_count")
+  oldestDate        DateTime?      @map("oldest_date")
+  averageWaitMonths Float?         @default(0) @map("average_wait_months")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  landBoard         LandBoard      @relation(fields: [landBoardId], references: [landBoardId])
+
+  @@unique([landBoardId, settlementType])
+  @@map("waiting_list_stats")
+}
+
+model AuditLog {
+  auditLogId String   @id @default(cuid()) @map("audit_log_id")
+  userId     String?  @map("user_id")
+  action     String
+  ipAddress  String?  @map("ip_address")
+  timestamp  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [userId])
+
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model StatusHistory {
+  id            String            @id @default(cuid())
+  applicationId String
+  status        ApplicationStatus
+  notes         String?
+  changedBy     String?
+  changedAt     DateTime          @default(now())
+  application   Application       @relation(fields: [applicationId], references: [applicationId])
+  user          User?             @relation("StatusHistoryUser", fields: [changedBy], references: [userId])
+
+  @@map("status_history")
+}
+
+model TempDocument {
+  tempId       String   @id @default(cuid()) @map("temp_id")
+  documentType String   @map("document_type")
+  filename     String
+  filePath     String   @map("file_path")
+  fileSize     Int      @map("file_size")
+  mimeType     String   @map("mime_type")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiresAt    DateTime @map("expires_at")
+
+  @@map("temp_documents")
+}
+
+enum Role {
+  APPLICANT
+  STAFF
+  MANAGER
+  ADMIN
+}
+
+enum SettlementType {
+  TOWN
+  VILLAGE
+  FARM
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  DOCUMENTS_VERIFIED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum BoardType {
+  MAIN
+  SUBORDINATE
+}
+
+enum NotificationType {
+  EMAIL
+  IN_APP
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  SEPARATED
+  WIDOWED
+}
