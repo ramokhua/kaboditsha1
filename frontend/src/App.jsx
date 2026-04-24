@@ -27,6 +27,9 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ManagerAuditPage from './pages/ManagerAuditPage';
 import ManagerDashboard from './components/dashboard/ManagerDashboard';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import LandBoardDirectoryPage from './pages/LandBoardDirectoryPage';
 
 function App() {
   return (
@@ -112,6 +115,9 @@ function App() {
               } />
               
               <Route path="/faq" element={<FAQPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/land-board-directory" element={<LandBoardDirectoryPage />} />
               <Route path="/404" element={<NotFoundPage />} />
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>

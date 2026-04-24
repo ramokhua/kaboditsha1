@@ -28,10 +28,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/" className="text-white/70 hover:text-white">Home</Link></li>
-              <li><Link to="/about" className="text-white/70 hover:text-white">About</Link></li>
-              <li><Link to="/contact" className="text-white/70 hover:text-white">Contact</Link></li>
-              <li><Link to="/faq" className="text-white/70 hover:text-white"><a href="/faq" className="hover:text-[#B45F3A] transition-colors">FAQ</a></Link></li>
+              <li><Link to="/" className="text-white/70 hover:text-white transition-colors">Home</Link></li>
+              <li><Link to="/about" className="text-white/70 hover:text-white transition-colors">About</Link></li>
+              <li><Link to="/contact" className="text-white/70 hover:text-white transition-colors">Contact</Link></li>
+              <li><Link to="/faq" className="text-white/70 hover:text-white transition-colors">FAQ</Link></li>
             </ul>
           </div>
 
@@ -39,10 +39,18 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Resources</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="text-white/70 hover:text-white">Land Board Directory</a></li>
-              <li><a href="#" className="text-white/70 hover:text-white">Application Guide</a></li>
-              <li><a href="#" className="text-white/70 hover:text-white">Required Documents</a></li>
-              <li><a href="#" className="text-white/70 hover:text-white">Ministry Website</a></li>
+              <li><Link to="/land-board-directory" className="text-white/70 hover:text-white transition-colors">Land Board Directory</Link></li>
+              <li><Link to="/user-manual" className="text-white/70 hover:text-white transition-colors">Application Guide</Link></li>
+              <li>
+                <a 
+                  href="https://www.gov.bw/ministries/ministry-lands-and-agriculture" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-white/70 hover:text-white transition-colors"
+                >
+                  Ministry Website
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -56,7 +64,9 @@ const Footer = () => {
               </li>
               <li className="flex items-center text-white/70">
                 <span className="mr-2">📧</span>
-                support@kaboditsha.gov.bw
+                <a href="mailto:kaboditsha.lms@gmail.com" className="hover:text-white transition-colors">
+                  kaboditsha.lms@gmail.com
+                </a>
               </li>
               <li className="flex items-center text-white/70">
                 <span className="mr-2">📍</span>
@@ -68,7 +78,7 @@ const Footer = () => {
 
         <div className="border-t border-white/20 mt-8 pt-8 text-center text-white/60 text-sm">
           <p>© {new Date().getFullYear()} KaboDitsha. All rights reserved.</p>
-          <p className="mt-2">Ministry of Land Management, Water and Sanitation Services</p>
+          <p className="mt-2">Ministry of Lands and Agriculture, Botswana</p>
         </div>
       </div>
     </footer>
