@@ -553,7 +553,7 @@ const getRegionAuditLogs = async (req, res) => {
     // Get audit logs for those staff users
     const logs = await prisma.auditLog.findMany({
       where: {
-        userld: { in: staffIds }
+        userId: { in: staffIds }
       },
       include: {
         user: {
@@ -573,7 +573,7 @@ const getRegionAuditLogs = async (req, res) => {
     // Add board name to each log
     const logsWithBoard = logs.map(log => ({
       ...log,
-      landBoard: staffBoardMap[log.userld] || 'N/A'
+      landBoard: staffBoardMap[log.userId] || 'N/A'
     }));
 
     res.json(logsWithBoard);

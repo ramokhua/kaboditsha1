@@ -1,4 +1,4 @@
-// backend/controllers/auth.controller.js - FIXED for your schema
+// backend/controllers/auth.controller.js
 
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
@@ -151,6 +151,9 @@ const register = async (req, res) => {
     // Create welcome notification
     await createWelcomeNotification(user.userId, user.fullName);
 
+    // ✅ CREATE AUDIT LOG FOR REGISTRATION
+    await createAuditLog(user.userId, `User registered: ${email} (APPLICANT)`, req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+
     // Generate JWT token for auto-login
     const authToken = jwt.sign(
       { userId: user.userId, email: user.email, role: user.role },
@@ -228,6 +231,9 @@ const verifyEmail = async (req, res) => {
         }
       });
       await createWelcomeNotification(user.userId, user.fullName);
+      
+      // ✅ CREATE AUDIT LOG FOR EMAIL VERIFICATION
+      await createAuditLog(user.userId, `Email verified: ${user.email}`, req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
     }
 
     return res.send(`
@@ -308,6 +314,9 @@ const resendVerification = async (req, res) => {
           tokenExpiry: null
         }
       });
+      
+      // ✅ CREATE AUDIT LOG FOR RESEND VERIFICATION
+      await createAuditLog(user.userId, `Verification resent: ${user.email}`, req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
     }
 
     res.json({ message: 'Your account has been verified. You can now log in.' });
@@ -346,7 +355,9 @@ const login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
-    await createAuditLog(user.userId, `User Login: ${user.email}`, req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+    // ✅ CREATE AUDIT LOG FOR LOGIN
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    await createAuditLog(user.userId, `User logged in: ${user.email}`, clientIp);
 
     const { password: _, ...userWithoutPassword } = user;
 
@@ -358,6 +369,21 @@ const login = async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Failed to login' });
+  }
+};
+
+// Logout user (optional - creates audit log)
+const logout = async (req, res) => {
+  try {
+    if (req.user && req.user.userId) {
+      const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      await createAuditLog(req.user.userId, `User logged out: ${req.user.email}`, clientIp);
+    }
+    
+    res.json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Failed to logout' });
   }
 };
 
@@ -432,6 +458,10 @@ const forgotPassword = async (req, res) => {
       resetUrl: resetUrl
     });
     
+    // ✅ CREATE AUDIT LOG FOR PASSWORD RESET REQUEST
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    await createAuditLog(user.userId, `Password reset requested for: ${user.email}`, clientIp);
+    
     res.json({ message: 'If your email is registered, you will receive a reset link' });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -470,6 +500,10 @@ const resetPassword = async (req, res) => {
       }
     });
     
+    // ✅ CREATE AUDIT LOG FOR PASSWORD RESET
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    await createAuditLog(user.userId, `Password reset completed for: ${user.email}`, clientIp);
+    
     res.json({ message: 'Password reset successful. You can now login with your new password.' });
   } catch (error) {
     console.error('Reset password error:', error);
@@ -482,6 +516,7 @@ module.exports = {
   verifyEmail,
   resendVerification,
   login,
+  logout,
   getMe,
   forgotPassword,
   resetPassword
