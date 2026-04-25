@@ -87,36 +87,49 @@ KaboDitsha is a web-based platform that digitizes the entire land application li
 | **Role-Based Dashboards** | Separate interfaces for Applicants, Staff, Managers, and Admins |
 | **Analytics & Reporting** | Comprehensive charts, exportable reports for managers |
 | **GPS-Powered Location** | Identify nearest Land Board, check proximity to essential services |
+| **Smart Board Matcher** | Compare Land Boards by wait time and approval rate to make informed decisions |
+| **Manager Audit Trail** | Complete log of all staff and manager actions within a region |
 
 ### 1.5 Project Objectives
 
-| Objective | Description |
-|-----------|-------------|
-| **Digitize the Entire Process** | Enable citizens to apply online, upload documents, and receive immediate confirmation |
-| **Implement Real-Time Tracking** | Allow applicants to log into a secure dashboard, view their position on the waiting list, and receive automatic updates via email and in-app notifications |
-| **Develop Administration System** | Provide staff with tools to process applications, verify documents, update records, and communicate with applicants through a single interface |
-| **Ensure Accessibility & Security** | Create an intuitive, mobile-responsive platform with JWT authentication and role-based access control |
-| **Provide Decision Support** | Offer comparative analytics across Land Boards to help applicants make informed decisions about where to apply |
+| Objective | Status | Description |
+|-----------|--------|-------------|
+| **Digitize the Entire Process** | ✅ Complete | Enable citizens to apply online, upload documents, and receive immediate confirmation |
+| **Implement Real-Time Tracking** | ✅ Complete | Allow applicants to log into a secure dashboard, view their position on the waiting list, and receive automatic updates via email and in-app notifications |
+| **Develop Administration System** | ✅ Complete | Provide staff with tools to process applications, verify documents, update records, and communicate with applicants through a single interface |
+| **Ensure Accessibility & Security** | ✅ Complete | Create an intuitive, mobile-responsive platform with JWT authentication and role-based access control |
+| **Provide Decision Support** | ✅ Complete | Offer comparative analytics across Land Boards to help applicants make informed decisions about where to apply |
 
 ### 1.6 Project Scope
 
 #### 1.6.1 In Scope
 
-| Component | Description |
-|-----------|-------------|
-| **Public Homepage** | Waiting list statistics per Land Board, explanation of one-plot-per-settlement-type rule, eligibility criteria, application process overview |
-| **Public Web Portal** | Account creation, secure login, online application submission, document upload, queue position tracking, notifications |
-| **Admin Dashboard** | Application review and processing, status updates, waiting list management, report generation |
-| **GPS Location Features** | Identify user's Land Board jurisdiction, check proximity to services (roads, schools, clinics) |
-| **User Authentication** | JWT-based authentication, session handling, role-based access control |
-| **Document Management** | Upload, storage, and verification of supporting documents |
+| Component | Status | Description |
+|-----------|--------|-------------|
+| **Public Homepage** | ✅ Complete | Waiting list statistics per Land Board, explanation of one-plot-per-settlement-type rule, eligibility criteria, application process overview |
+| **Top 15 Boards Visualization** | ✅ Complete | Waiting list severity chart with percentile-based coloring (green → red) |
+| **Smart Board Matcher** | ✅ Complete | GPS-powered recommendation tool comparing wait times and approval rates |
+| **Application Trends Chart** | ✅ Complete | Monthly submission, approval, and pending trends with decision-making insights |
+| **Settlement Performance Chart** | ✅ Complete | Approval rates and turnaround time by settlement type with purpose/region filters |
+| **Public Web Portal** | ✅ Complete | Account creation, secure login, online application submission, document upload, queue position tracking, notifications |
+| **Staff Dashboard** | ✅ Complete | Application review and processing, document verification, status updates, internal notes |
+| **Manager Dashboard** | ✅ Complete | Analytics dashboard with application trends, status distribution, turnaround time, regional performance radar chart |
+| **Manager Audit Trail** | ✅ Complete | Complete log of all staff and manager actions within a manager's region |
+| **Admin Panel** | ✅ Complete | User management, land board management, system audit logs |
+| **GPS Location Features** | ✅ Complete | Identify user's Land Board jurisdiction, check proximity to services |
+| **User Authentication** | ✅ Complete | JWT-based authentication, session handling, role-based access control (4 roles) |
+| **Document Management** | ✅ Complete | Upload, temporary storage (24-hour expiry), and verification of supporting documents |
+| **Email Notifications** | ✅ Complete | Nodemailer integration for status updates and password reset |
+| **In-App Notifications** | ✅ Complete | Bell icon with unread badge, real-time updates |
+| **Password Reset** | ✅ Complete | Secure token-based password recovery |
+| **Profile Management** | ✅ Complete | User profile editing and password change |
 
 #### 1.6.2 Out of Scope
 
 | Component | Reason |
 |-----------|--------|
 | Payment Gateway Integration | Cost considerations, academic project scope |
-| AI Chatbot (Stretch Goal) | Time permitting, not a core requirement |
+| AI Chatbot (Stretch Goal) | Time permitting, not a core requirement (documented as future enhancement) |
 | Fully Automated Approvals | Legal requirements for human oversight |
 | Integration with National Databases | Limited API availability, security concerns |
 | Multi-Language Support | English is the official administrative language |
@@ -127,13 +140,13 @@ KaboDitsha is a web-based platform that digitizes the entire land application li
 | Metric | Value |
 |--------|-------|
 | Main Land Boards | 12 |
-| Subordinate Land Boards | 40+ |
-| Seeded Applicants | 2,500+ |
-| Seeded Applications | 5,000+ |
+| Subordinate Land Boards | 39 |
+| Seeded Users | ~60,000 |
+| Seeded Applications | ~67,000 |
 | User Roles | 4 (Applicant, Staff, Manager, Admin) |
-| API Endpoints | 35+ |
+| API Endpoints | 50+ |
 | Database Tables | 11 |
-| Lines of Code | ~18,000 |
+| Lines of Code | ~25,000 |
 
 ---
 
@@ -171,19 +184,19 @@ KaboDitsha follows a modern three-tier architecture:
 |------|------------------|
 | **Applicant** | Submit applications, track status, upload documents, withdraw applications |
 | **Staff** | Review applications, verify documents, update statuses, add notes |
-| **Manager** | Oversee region, view analytics, approve allocations, generate reports |
-| **Admin** | Manage users, configure land boards, view audit logs, system settings |
+| **Manager** | Oversee region, view analytics, approve allocations, generate reports, view regional audit trail |
+| **Admin** | Manage users, configure land boards, view system audit logs, broadcast notifications |
 
 ### 2.3 Core Workflows
 
 #### 2.3.1 Application Submission Workflow
 
 1. Applicant registers and logs in
-2. Completes multi-step application form (Personal Info → Land Selection → Document Upload → Review)
+2. Completes multi-step application form (Land Selection → Settlement Type → Document Upload → Review)
 3. System validates one-plot-per-settlement-type policy
 4. Application enters FIFO queue for selected Land Board
 5. Applicant receives confirmation email with reference number
-6. Applicant can track queue position in real-time
+6. Applicant can track queue position in real-time ("47 of 15,250 applicants")
 
 #### 2.3.2 Staff Review Workflow
 
@@ -192,15 +205,25 @@ KaboDitsha follows a modern three-tier architecture:
 3. Verifies documents (approve/reject with reason)
 4. Updates application status (UNDER_REVIEW → DOCUMENTS_VERIFIED → APPROVED/REJECTED)
 5. System auto-rebalances queue positions
-6. Applicant receives email notification of status change
+6. Applicant receives email and in-app notification of status change
 
-#### 2.3.3 Queue Management Workflow
+#### 2.3.3 Manager Analytics Workflow
+
+1. Manager logs in and views regional analytics dashboard
+2. Reviews application trends (submitted vs approved over time)
+3. Analyzes status distribution to identify bottlenecks
+4. Monitors turnaround time trends
+5. Compares regional performance using radar chart
+6. Exports PDF or Excel reports for stakeholders
+7. Reviews audit trail of all staff actions in region
+
+#### 2.3.4 Queue Management Workflow
 
 1. Applications ordered by submission date (FIFO)
 2. Queue position calculated automatically
 3. When an application is approved/rejected, all subsequent positions rebalance
 4. Real-time updates via 30-second polling
-5. Display shows meaningful position: "47 of 152,498 applicants"
+5. Display shows meaningful position: "47 of 15,250 applicants" with estimated wait time
 
 ---
 
@@ -245,45 +268,130 @@ KaboDitsha follows a modern three-tier architecture:
 
 ---
 
-## 4. Project Timeline
+## 4. Database Schema
 
-### 4.1 Alpha Milestone (Completed)
+### Core Models
 
-| Feature | Status | Completion Date |
-|---------|--------|-----------------|
-| Database Schema Design | ✅ | March 4, 2026 |
-| User Authentication | ✅ | March 9, 2026 |
-| Land Board Data Seeding | ✅ | March 12, 2026 |
-| Application Submission | ✅ | March 15, 2026 |
-| Basic Queue Management | ✅ | March 18, 2026 |
+```prisma
+model User {
+  userId        String    @id @default(cuid())
+  userNumber    String    @unique // Format: US000001
+  email         String    @unique
+  password      String
+  fullName      String
+  omangNumber   Int       @unique // 9-digit Botswana ID
+  phone         String?
+  role          Role      @default(APPLICANT)
+  landBoardId   String?   // Staff/Manager assignment
+  applications  Application[]
+  notifications Notification[]
+}
 
-### 4.2 Beta Milestone (In Progress - Due April 14, 2026)
+model LandBoard {
+  landBoardId   String    @id @default(cuid())
+  boardNumber   String    @unique // MLB001 / SLB001
+  name          String
+  type          BoardType // MAIN or SUBORDINATE
+  parentBoardId String?   // For subordinate boards
+  region        String
+  jurisdiction  String?
+  officeAddress String?
+  contactInfo   String?
+  applications  Application[]
+  waitingListStats WaitingListStat[]
+  staff         User[]
+}
 
-| Feature | Status | Target Date |
-|---------|--------|-------------|
-| Document Upload | ✅ | March 25, 2026 |
-| Notification System | ✅ | March 30, 2026 |
-| Staff Dashboard | ✅ | April 1, 2026 |
-| Manager Analytics | ✅ | April 1, 2026 |
-| Admin Panel | ✅ | April 1, 2026 |
-| Password Reset | 🟡 | April 7, 2026 |
-| Profile Edit | 🟡 | April 7, 2026 |
-| End-to-End Testing | ⏳ | April 14, 2026 |
+model Application {
+  applicationId   String    @id @default(cuid())
+  applicationNumber String  @unique // APP2026000001
+  referenceNumber String    @unique
+  userId          String
+  landBoardId     String
+  settlementType  SettlementType // TOWN, VILLAGE, FARM
+  status          ApplicationStatus
+  queuePosition   Int?
+  purpose         String?
+  submittedAt     DateTime  @default(now())
+}
 
-### 4.3 Final Release (Planned)
+model AuditLog {
+  auditLogId String   @id @default(cuid())
+  userId     String?
+  action     String
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [userId])
+}
+```
 
-| Feature | Target Date |
-|---------|-------------|
-| AI Chatbot Integration | May 2026 |
-| Performance Optimization | May 2026 |
-| Documentation Completion | May 2026 |
-| Final Submission | May 2026 |
+### Database Statistics (Seeded at 10% Scale)
+
+| Table | Record Count |
+|-------|--------------|
+| Users | ~60,000 |
+| Applications | ~67,000 |
+| Main Land Boards | 12 |
+| Subordinate Land Boards | 39 |
+| Waiting List Stats | 204 |
+| Audit Logs | 500+ |
+| Notifications | ~67,000 |
+| Status History | ~67,000 |
 
 ---
 
-## 5. Deployment
+## 5. Project Timeline
 
-### 5.1 Live URLs
+### 5.1 Alpha Milestone (Completed - March 11, 2026)
+
+| Feature | Status |
+|---------|--------|
+| Database Schema Design | ✅ Complete |
+| User Authentication | ✅ Complete |
+| Land Board Data Seeding | ✅ Complete |
+| Application Submission | ✅ Complete |
+| Basic Queue Management | ✅ Complete |
+
+### 5.2 Beta Milestone (Completed - April 14, 2026)
+
+| Feature | Status |
+|---------|--------|
+| Document Upload | ✅ Complete |
+| Notification System | ✅ Complete |
+| Staff Dashboard | ✅ Complete |
+| Manager Analytics | ✅ Complete |
+| Admin Panel | ✅ Complete |
+| Password Reset | ✅ Complete |
+| Profile Edit | ✅ Complete |
+| Manager Audit Trail | ✅ Complete |
+| Smart Board Matcher | ✅ Complete |
+| Waiting List Severity Chart | ✅ Complete |
+| Settlement Performance Chart | ✅ Complete |
+| Application Trends Chart | ✅ Complete |
+| End-to-End Testing | ✅ Complete |
+
+### 5.3 Final Release (Due April 27, 2026)
+
+| Feature | Status |
+|---------|--------|
+| Documentation Completion | In Progress |
+| Final Testing | In Progress |
+| Deployment Verification | In Progress |
+
+### 5.4 Future Enhancements (Post-Submission)
+
+| Feature | Target |
+|---------|--------|
+| AI Chatbot Integration | Future |
+| Mobile Application | Future |
+| SMS Notifications | Future |
+| Bulk Operations | Future |
+
+---
+
+## 6. Deployment
+
+### 6.1 Live URLs
 
 | Service | URL |
 |---------|-----|
@@ -291,31 +399,35 @@ KaboDitsha follows a modern three-tier architecture:
 | Backend API (Render) | https://kaboditsha-api.onrender.com |
 | Health Check | https://kaboditsha-api.onrender.com/api/health |
 
-### 5.2 Test Credentials
+### 6.2 Test Credentials
 
 All passwords: **Password123**
 
-| Role | Email |
-|------|-------|
-| Admin | admin0.6567@kaboditsha.gov.bw |
-| Manager (Kgatleng) | tumelo.montsho.manager2@landboard.gov.bw |
-| Staff (Kgatleng) | lorato.kgafela.staff3@landboard.gov.bw |
-| Applicant (Kgatleng) | boitumelo.smith.0.8757@botswana.co.bw |
+| Role | Email | Region/Board |
+|------|-------|--------------|
+| **Admin** | admin0.6567@kaboditsha.gov.bw | System-wide |
+| **Manager (Kgatleng)** | tumelo.montsho.manager2@landboard.gov.bw | Kgatleng |
+| **Manager (Malete)** | kgosi.brown.manager5@landboard.gov.bw | Malete |
+| **Staff (Kgatleng)** | lorato.kgafela.staff3@landboard.gov.bw | Kgatleng |
+| **Staff (Malete)** | bontle.williams.staff7@landboard.gov.bw | Malete |
+| **Applicant (Kgatleng)** | boitumelo.smith.0.8757@botswana.co.bw | Kgatleng |
+| **Applicant (Malete)** | tshepo.molefe.4.6750@yahoo.com | Malete |
 
 ---
 
-## 6. Conclusion
+## 7. Conclusion
 
 KaboDitsha represents a significant step toward modernizing Botswana's land administration system. By digitizing the entire application lifecycle—from submission through allocation—the system addresses critical pain points:
 
 - **Accessibility:** Citizens can apply from anywhere, eliminating travel requirements
 - **Transparency:** Real-time queue positions replace uncertain phone calls and office visits
 - **Efficiency:** Automated queue management reduces administrative overhead
-- **Accountability:** Complete audit trails ensure transparency
+- **Accountability:** Complete audit trails ensure transparency at all levels
+- **Data-Driven Decision Making:** Managers can identify bottlenecks and track performance trends
 
-The system is currently in its Beta phase, with core functionality complete and user acceptance testing underway. All features align with the Digital Services Bill 2025 requirements and Botswana's Vision 2036 digital transformation agenda.
+The system is now **feature-complete** for the Beta milestone, with all core functionality implemented and tested. The platform aligns with the Digital Services Bill 2025 requirements and Botswana's Vision 2036 digital transformation agenda.
 
 ---
 
-**Last Updated:** April 1, 2026  
-**Version:** 1.0.0-Beta
+**Last Updated:** April 25, 2026  
+**Version:** 1.0.0-Beta (Complete)

@@ -1,4 +1,4 @@
-# 🏞️ KaboDitsha: Land Management System for Botswana
+# KaboDitsha: Land Management System for Botswana
 
 <div align="center">
   <img src="./frontend/src/kaboditshaLogo.png" alt="KaboDitsha Logo" width="200"/>
@@ -20,12 +20,11 @@
 - [User Roles & Permissions](#-user-roles--permissions)
 - [API Endpoints](#-api-endpoints)
 - [Getting Started](#-getting-started)
+- [Seeding the Database](#-seeding-the-database)
 - [Testing Credentials](#-testing-credentials)
-- [Deployment](#-deployment)
 - [Project Status](#-project-status)
 - [Roadmap](#-roadmap)
 - [Documentation](#-documentation)
-- [Contributing](#-contributing)
 - [License](#-license)
 - [Contact](#-contact)
 
@@ -40,16 +39,18 @@
 | Metric | Value |
 |--------|-------|
 | Main Land Boards | 12 |
-| Subordinate Land Boards | 40+ |
-| Seeded Applicants | 2,500+ |
-| Seeded Applications | 5,000+ |
+| Subordinate Land Boards | 39 |
+| Seeded Users | ~60,000 |
+| Seeded Applications | ~67,000 |
 | User Roles | 4 (Applicant, Staff, Manager, Admin) |
+| API Endpoints | 50+ |
+| Database Tables | 11 |
 
 ---
 
 ## 🎯 Problem Statement
 
-Land allocation in Botswana is managed through twelve Main Land Boards and their subordinate Land Boards, all overseen by the Ministry of Land Management, Water and Sanitation Services. The current system faces critical challenges:
+Land allocation in Botswana is managed through twelve Main Land Boards and their subordinate Land Boards, all overseen by the Ministry of Lands and Agriculture. The current system faces critical challenges:
 
 ### 1. Manual Application Process
 - Applicants must obtain paper forms in person at Land Board offices
@@ -84,19 +85,19 @@ KaboDitsha addresses these challenges through a modern digital platform:
 |---------|-------------|
 | **Online Applications** | Submit applications, upload documents, receive immediate confirmation |
 | **Real-Time Tracking** | View waiting list position, receive email/in-app notifications |
-| **Admin Dashboard** | Centralized management for Land Board staff |
+| **Staff Dashboard** | Review applications, verify documents, update statuses |
+| **Manager Analytics** | Regional performance charts, exportable reports, audit trail |
+| **Admin Panel** | User management, land board configuration, system audit logs |
 | **Queue Management** | FIFO (First-In-First-Out) with auto-rebalancing |
-| **Document Upload** | Secure upload of Omang, marriage certificates, and supporting documents |
-| **Role-Based Access** | Separate dashboards for Applicants, Staff, Managers, and Admins |
-| **Analytics Dashboard** | Comprehensive charts and reports for managers |
-| **Audit Logging** | Complete trail of all system actions |
+| **Smart Board Matcher** | GPS-powered comparison of wait times and approval rates |
+| **Waiting List Severity** | Top 15 boards with percentile-based coloring (green → red) |
 
 ### Key Benefits
 
 - ✅ **Transparency**: Real-time queue positions with "X of Y" format
 - ✅ **Efficiency**: Auto-rebalancing queue positions on status changes
 - ✅ **Accessibility**: Apply from anywhere, anytime
-- ✅ **Accountability**: Full audit trail of all actions
+- ✅ **Accountability**: Complete audit trail of all actions
 - ✅ **Data-Driven**: Analytics and reporting for informed decision-making
 
 ---
@@ -187,7 +188,6 @@ model User {
   landBoardId   String?   // Staff/Manager assignment
   applications  Application[]
   notifications Notification[]
-  // ... relations
 }
 
 model LandBoard {
@@ -211,36 +211,35 @@ model Application {
   referenceNumber String    @unique
   userId          String
   landBoardId     String
-  settlementType  SettlementType // CITY, TOWN, VILLAGE, FARM
+  settlementType  SettlementType // TOWN, VILLAGE, FARM
   status          ApplicationStatus
   queuePosition   Int?
   purpose         String?
   submittedAt     DateTime  @default(now())
-  // ... status tracking fields
 }
 
-model WaitingListStat {
-  statId            String   @id @default(cuid())
-  landBoardId       String
-  settlementType    SettlementType
-  totalCount        Int      @default(0)
-  eligibleCount     Int?
-  oldestDate        DateTime?
-  averageWaitMonths Float?
+model AuditLog {
+  auditLogId String   @id @default(cuid())
+  userId     String?
+  action     String
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [userId])
 }
 ```
 
-### Database Statistics (Seeded)
+### Database Statistics (Seeded at 10% Scale)
 
-| Table | Records |
-|-------|---------|
-| Users | 2,537 |
-| Applications | 5,043+ |
+| Table | Record Count |
+|-------|--------------|
+| Users | ~60,000 |
+| Applications | ~67,000 |
 | Main Land Boards | 12 |
 | Subordinate Land Boards | 39 |
-| Documents | ~500 |
-| Notifications | 100+ |
 | Waiting List Stats | 204 |
+| Audit Logs | 500+ |
+| Notifications | ~67,000 |
+| Status History | ~67,000 |
 
 ---
 
@@ -250,23 +249,15 @@ model WaitingListStat {
 
 | Category | Features | Status |
 |----------|----------|--------|
-| **Authentication** | Register, Login, JWT, Role-based Access | ✅ |
-| **Queue Management** | FIFO Ordering, Auto-rebalancing, Real-time Updates | ✅ |
+| **Authentication** | Register, Login, JWT, Role-based Access, Password Reset | ✅ |
+| **Queue Management** | FIFO Ordering, Auto-rebalancing, Real-time Updates (30s polling) | ✅ |
 | **Application** | Multi-step Form, Document Upload, Withdrawal | ✅ |
 | **Notifications** | In-app Bell, Email Alerts, Broadcast | ✅ |
-| **Staff** | Review Applications, Verify Documents, Status Updates | ✅ |
-| **Manager** | Regional Analytics, Performance Charts, PDF Export | ✅ |
-| **Admin** | User Management, Land Board Management, Audit Logs | ✅ |
-| **Public** | KPIs, Trends Chart, Gender Distribution | ✅ |
-
-### In Progress / Planned
-
-| Feature | Status | Target |
-|---------|--------|--------|
-| AI Chatbot | 📋 Planned | Final Release |
-| Mobile App | 📋 Planned | Future |
-| SMS Notifications | 📋 Planned | Future |
-| Bulk Operations | 📋 Planned | Beta |
+| **Staff** | Review Applications, Verify Documents, Status Updates, Internal Notes | ✅ |
+| **Manager** | Regional Analytics, Performance Charts, PDF/Excel Export, Audit Trail | ✅ |
+| **Admin** | User Management, Land Board Management, System Audit Logs | ✅ |
+| **Public** | Top 15 Boards (percentile-based), Smart Board Matcher, Gender Distribution | ✅ |
+| **Visualizations** | Application Trends, Settlement Performance (with purpose/region filters) | ✅ |
 
 ---
 
@@ -283,26 +274,26 @@ model WaitingListStat {
 | **Update Status** | ❌ | ✅ | ✅ | ✅ |
 | **Region Statistics** | ❌ | ❌ | ✅ | ✅ |
 | **Analytics Dashboard** | ❌ | ❌ | ✅ | ✅ |
+| **Region Audit Trail** | ❌ | ❌ | ✅ | ✅ |
 | **User Management** | ❌ | ❌ | ❌ | ✅ |
 | **Land Board Management** | ❌ | ❌ | ❌ | ✅ |
-| **Audit Logs** | ❌ | ❌ | ❌ | ✅ |
+| **System Audit Logs** | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
 ## 📡 API Endpoints
 
 ### Authentication
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/auth/register` | Register new user |
 | POST | `/api/auth/login` | User login |
 | GET | `/api/auth/me` | Get current user |
+| POST | `/api/auth/logout` | User logout |
 | POST | `/api/auth/forgot-password` | Request password reset |
 | POST | `/api/auth/reset-password` | Reset password |
 
 ### Applications
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/applications/my` | Get user's applications |
@@ -312,7 +303,6 @@ model WaitingListStat {
 | POST | `/api/applications/:id/documents` | Upload document |
 
 ### Staff
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/staff/applications` | Board applications |
@@ -320,14 +310,13 @@ model WaitingListStat {
 | PUT | `/api/staff/documents/:id/verify` | Verify document |
 
 ### Manager
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/manager/stats` | Region statistics |
 | GET | `/api/manager/performance` | Analytics data |
+| GET | `/api/manager/audit-logs` | Region audit trail |
 
 ### Admin
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/users` | List users |
@@ -336,14 +325,13 @@ model WaitingListStat {
 | GET | `/api/admin/audit-logs` | Get audit logs |
 
 ### Public
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/health` | Health check |
 | GET | `/api/landboards` | Get all land boards |
-| GET | `/api/statistics` | Get waiting list statistics |
-| GET | `/api/applications/stats/gender` | Gender distribution |
 | GET | `/api/waiting-list/stats` | Waiting list statistics |
+| GET | `/api/applications/stats/gender` | Gender distribution |
+| GET | `/api/applications/trends` | Application volume trends |
 
 ---
 
@@ -378,19 +366,15 @@ cp .env.example .env
 # DATABASE_URL="postgresql://username:password@localhost:5432/kaboditsha"
 # JWT_SECRET="your-super-secret-key"
 # JWT_EXPIRE="7d"
-
-# Setup database
-npx prisma migrate dev
-npm run seed
-
-# Start backend server
-npm run dev
+# EMAIL_USER="kaboditsha.lms@gmail.com"
+# EMAIL_PASS="your-gmail-app-password"
+# FRONTEND_URL="http://localhost:5173"
 ```
 
 #### 3. Frontend Setup
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 
 # Create environment file
@@ -398,19 +382,61 @@ cp .env.example .env
 
 # Edit .env with your backend URL
 # VITE_API_URL=http://localhost:5000/api
+```
 
-# Start frontend server
+---
+
+## 🌱 Seeding the Database
+
+Run seed scripts in the following order (each script must complete before running the next):
+
+```bash
+cd backend
+
+# 1. Create Land Boards (12 Main + 39 Subordinate)
+node prisma/seed-1-boards.js
+
+# 2. Create Staff, Managers, and Admins
+node prisma/seed-2-users.js
+
+# 3. Create Applicants and Applications (~60,000 users, ~67,000 applications)
+node prisma/seed-3-applications.js
+
+# 4. Add Historical Data (turnaround time data for last 12 months)
+node prisma/seed-historical-data.js
+
+# 5. Populate Supporting Tables (WaitingListStat, StatusHistory, Notifications)
+node prisma/seed-5-supporting-data.js
+
+# 6. Create Audit Logs (historical audit trail)
+node prisma/seed-6-audit-logs.js
+```
+
+**Note:** 
+- `seed-3-applications.js` takes approximately 2-3 minutes to complete
+- All scripts use batch processing for performance (500 records per batch)
+- At 10% scale, total applications will be ~60,000-67,000
+
+### Start the Application
+
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev
+
+# Terminal 2 - Frontend
+cd frontend
 npm run dev
 ```
 
-#### 4. Access the Application
+### Access the Application
 
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:5173 |
 | Backend API | http://localhost:5000 |
 | API Health | http://localhost:5000/api/health |
-| Prisma Studio | http://localhost:5555 (run `npx prisma studio` in backend) |
+| Prisma Studio | `npx prisma studio` (run in backend folder) |
 
 ---
 
@@ -420,122 +446,67 @@ All passwords: **Password123**
 
 | Role | Email | Region/Board |
 |------|-------|--------------|
-| **Admin** | `admin0.6567@kaboditsha.gov.bw` | System-wide |
-| **Manager (Kgatleng)** | `tumelo.montsho.manager2@landboard.gov.bw` | Kgatleng |
-| **Manager (Malete)** | `kgosi.brown.manager5@landboard.gov.bw` | Malete |
-| **Staff (Kgatleng)** | `lorato.kgafela.staff3@landboard.gov.bw` | Kgatleng |
-| **Staff (Malete)** | `bontle.williams.staff7@landboard.gov.bw` | Malete |
-| **Applicant (Kgatleng)** | `boitumelo.smith.0.8757@botswana.co.bw` | Kgatleng |
-| **Applicant (Kgatleng)** | `kabelo.mokgosi.1.8625@yahoo.com` | Kgatleng |
-| **Applicant (Malete)** | `tshepo.molefe.4.6750@yahoo.com` | Malete |
-| **Applicant (Malete)** | `kgosi.kelebeng.5.4094@btc.bw` | Malete |
-
----
-
-## 🌐 Deployment
-
-### Frontend (Vercel)
-
-```bash
-cd frontend
-vercel --prod
-```
-
-### Backend (Render)
-
-```bash
-# Push to GitHub
-git add .
-git commit -m "Deploy to Render"
-git push origin main
-
-# Connect repository on render.com
-# Set environment variables:
-# - DATABASE_URL (internal Render PostgreSQL URL)
-# - JWT_SECRET
-# - JWT_EXPIRE=7d
-# - FRONTEND_URL=https://your-frontend.vercel.app
-```
-
-### Live URLs
-
-| Service | URL |
-|---------|-----|
-| Frontend | https://kaboditsha.vercel.app |
-| Backend API | https://kaboditsha-api.onrender.com |
+| **Admin** | `admin0@kaboditsha.gov.bw` | System-wide |
+| **Manager (Kgatleng)** | `manager.kgatlenglandboard@landboard.gov.bw` | Kgatleng |
+| **Manager (Malete)** | `manager.maletelandboard@landboard.gov.bw` | Malete |
+| **Staff (Kgatleng)** | `staff.kgatlenglandboard@landboard.gov.bw` | Kgatleng |
+| **Staff (Malete)** | `staff.maletelandboard@landboard.gov.bw` | Malete |
+| **Applicant (Kgatleng)** | please see from the prisma database | Kgatleng |
+| **Applicant (Malete)** | please see from the prisma database | Malete |
 
 ---
 
 ## 📊 Project Status
 
-### Alpha Milestone (Complete)
+### Beta Milestone (Complete - April 14, 2026)
 
 | Feature | Status |
 |---------|--------|
-| Database Schema | ✅ Complete |
-| User Authentication | ✅ Complete |
-| Role-Based Access | ✅ Complete |
-| Land Board Data | ✅ Complete |
-| Application Submission | ✅ Complete |
-| Queue Management | ✅ Complete |
+| Document Upload | ✅ Complete |
+| Notification System | ✅ Complete |
+| Staff Dashboard | ✅ Complete |
+| Manager Analytics | ✅ Complete |
+| Admin Panel | ✅ Complete |
+| Password Reset | ✅ Complete |
+| Profile Edit | ✅ Complete |
+| Smart Board Matcher | ✅ Complete |
+| Waiting List Severity Chart | ✅ Complete |
+| Settlement Performance Chart | ✅ Complete |
+| Application Trends Chart | ✅ Complete |
+| Manager Audit Trail | ✅ Complete |
 
-### Beta Milestone (90% Complete)
+### Final Release (Due April 27, 2026)
 
-| Feature | Status | Due |
-|---------|--------|-----|
-| Document Upload | ✅ Complete | - |
-| Notification System | ✅ Complete | - |
-| Staff Dashboard | ✅ Complete | - |
-| Manager Analytics | ✅ Complete | - |
-| Admin Panel | ✅ Complete | - |
-| Password Reset | ✅ Complete | -  |
-| Profile Edit | ✅ Complete | -  |
+| Feature | Status |
+|---------|--------|
+| Documentation | In Progress |
+| Final Testing | In Progress |
 
 ---
 
 ## 🗺️ Roadmap
 
-### Beta Milestone (April 14, 2026)
-- [x] Complete notification system
-- [x] Staff and Manager dashboards
-- [x] Document upload with temp storage
-- [ ] Password reset functionality
-- [ ] Profile page edit
-- [ ] End-to-end testing
+### Post-Submission Enhancements
 
-### Final Release (May 2026)
-- [ ] AI Chatbot integration (Llama 3.2)
-- [ ] GPS location features
-- [ ] Bulk operations for staff
-- [ ] Advanced search and filters
-- [ ] Performance optimization
-
-### Future Enhancements
+- [ ] AI Chatbot integration (Llama 3.2 with RAG)
 - [ ] Mobile application (React Native)
 - [ ] SMS notifications
+- [ ] Bulk operations for staff
 - [ ] PWA for offline access
-- [ ] Integration with national databases
 
 ---
 
 ## 📚 Documentation
 
 ### Project Reports
-- [Project Overview](./docs/Project%20Overview.pdf)
 - [Detailed Proposal](./docs/KaboDitsha%20Detailed%20Proposal.pdf)
 - [API Documentation](./docs/API.md)
 
-### User Guides
-- [Applicant Guide](./docs/User%20Manual.md#applicant-guide)
-- [Staff Guide](./docs/User%20Manual.md#staff-guide)
-- [Manager Guide](./docs/User%20Manual.md#manager-guide)
-- [Admin Guide](./docs/User%20Manual.md#admin-guide)
-
----
-
-## 🤝 Contributing
-
-This is a final year project for the University of Botswana. For questions or suggestions, please contact the project lead.
+### User Manuals (PDF)
+- [Applicant Manual](./docs/applicant-manual.pdf)
+- [Staff Manual](./docs/staff-manual.pdf)
+- [Manager Manual](./docs/manager-manual.pdf)
+- [Admin Manual](./docs/admin-manual.pdf)
 
 ---
 
@@ -545,15 +516,9 @@ MIT License
 
 Copyright (c) 2026 Boitsholo Ramokhua
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 ---
 
@@ -575,4 +540,3 @@ copies or substantial portions of the Software.
   <p>© 2026 KaboDitsha. All rights reserved.</p>
   <p>Ministry of Lands and Agriculture, Botswana</p>
 </div>
-```
