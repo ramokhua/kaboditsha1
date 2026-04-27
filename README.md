@@ -417,6 +417,14 @@ node prisma/seed-6-audit-logs.js
 - All scripts use batch processing for performance (500 records per batch)
 - At 10% scale, total applications will be ~60,000-67,000
 
+## Database Restoration (Alternative to seeding te database)
+
+To restore from the provided database dump instead of seeding:
+
+```bash
+psql -U postgres -d kaboditsha < backend/kaboditsha_dump.sql
+```
+
 ### Start the Application
 
 ```bash
