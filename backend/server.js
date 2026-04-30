@@ -106,6 +106,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/temp-documents', tempDocumentRoutes);
+app.use('/temp', express.static(path.join(__dirname, 'uploads/temp')));
 
 // Root endpoint
 app.get('/', (req, res) => {

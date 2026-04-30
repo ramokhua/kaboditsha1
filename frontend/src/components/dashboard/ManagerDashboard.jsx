@@ -1,5 +1,4 @@
 // frontend/src/components/dashboard/ManagerDashboard.jsx
-// ORIGINAL WORKING VERSION - All charts working
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
