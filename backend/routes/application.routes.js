@@ -32,6 +32,9 @@ router.post('/',
 );
 router.get('/:id', applicationController.getApplicationById);
 router.put('/:id/status', applicationController.updateStatus);
+router.get('/draft', authenticate, applicationController.getDraftApplication);
+router.post('/draft', authenticate, applicationController.saveDraft);
+router.delete('/draft/:id', authenticate, applicationController.deleteDraft);
 
 // Document routes
 router.post('/:id/documents', upload.single('document'), applicationController.uploadDocument);

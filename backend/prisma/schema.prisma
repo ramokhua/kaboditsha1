@@ -3,13 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
   userId               String          @id @default(cuid()) @map("user_id")
-  userNumber           String          @unique @map("user_number")
   email                String          @unique
   password             String
   fullName             String          @map("full_name")
@@ -20,12 +19,13 @@ model User {
   verificationToken    String?         @map("verification_token")
   tokenExpiry          DateTime?       @map("token_expiry")
   landBoardId          String?         @map("land_board_id")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+  userNumber           String          @unique @map("user_number")
   maritalStatus        MaritalStatus?  @map("marital_status")
   spouseName           String?         @map("spouse_name")
   resetToken           String?         @map("reset_token")
   resetTokenExpiry     DateTime?       @map("reset_token_expiry")
-  createdAt            DateTime        @default(now()) @map("created_at")
-  updatedAt            DateTime        @updatedAt @map("updated_at")
   applicationsApproved Application[]   @relation("ApprovedBy")
   applicationsReviewed Application[]   @relation("ReviewedBy")
   applications         Application[]
@@ -39,19 +39,19 @@ model User {
 }
 
 model LandBoard {
-  landBoardId      String            @id @default(cuid()) @map("land_board_id")
-  boardNumber      String            @unique @map("board_number")
   name             String
   type             BoardType         @default(MAIN)
-  parentBoardId    String?           @map("parent_board_id")
   region           String
   jurisdiction     String?
-  officeAddress    String?           @map("office_address")
   contactInfo      String?           @map("contact_info")
-  totalAllocations Int?              @default(0) @map("total_allocations")
-  monthlyRate      Int?              @default(0) @map("monthly_rate")
   createdAt        DateTime          @default(now()) @map("created_at")
+  landBoardId      String            @id @default(cuid()) @map("land_board_id")
+  monthlyRate      Int?              @default(0) @map("monthly_rate")
+  officeAddress    String?           @map("office_address")
+  parentBoardId    String?           @map("parent_board_id")
+  totalAllocations Int?              @default(0) @map("total_allocations")
   updatedAt        DateTime          @updatedAt @map("updated_at")
+  boardNumber      String            @unique @map("board_number")
   applications     Application[]
   parent           LandBoard?        @relation("SubToMain", fields: [parentBoardId], references: [landBoardId])
   subBoards        LandBoard[]       @relation("SubToMain")
@@ -62,23 +62,23 @@ model LandBoard {
 }
 
 model Application {
-  applicationId     String            @id @default(cuid()) @map("application_id")
-  applicationNumber String            @unique @map("application_number")
-  referenceNumber   String            @unique @map("reference_number")
-  userId            String            @map("user_id")
-  landBoardId       String            @map("land_board_id")
-  settlementType    SettlementType    @map("settlement_type")
   status            ApplicationStatus @default(SUBMITTED)
+  applicationId     String            @id @default(cuid()) @map("application_id")
+  approvedAt        DateTime?         @map("approved_at")
+  approvedBy        String?           @map("approved_by")
+  landBoardId       String            @map("land_board_id")
+  notes             String?
   queuePosition     Int?              @map("queue_position")
-  purpose           String?
+  referenceNumber   String            @unique @map("reference_number")
+  rejectionReason   String?           @map("rejection_reason")
+  reviewedAt        DateTime?         @map("reviewed_at")
+  reviewedBy        String?           @map("reviewed_by")
+  settlementType    SettlementType    @map("settlement_type")
   submittedAt       DateTime          @default(now()) @map("submitted_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
-  reviewedBy        String?           @map("reviewed_by")
-  reviewedAt        DateTime?         @map("reviewed_at")
-  approvedBy        String?           @map("approved_by")
-  approvedAt        DateTime?         @map("approved_at")
-  rejectionReason   String?           @map("rejection_reason")
-  notes             String?
+  userId            String            @map("user_id")
+  purpose           String?
+  applicationNumber String            @unique @map("application_number")
   approver          User?             @relation("ApprovedBy", fields: [approvedBy], references: [userId])
   landBoard         LandBoard         @relation(fields: [landBoardId], references: [landBoardId])
   reviewer          User?             @relation("ReviewedBy", fields: [reviewedBy], references: [userId])
@@ -93,20 +93,20 @@ model Application {
 }
 
 model Document {
-  documentId         String             @id @default(cuid()) @map("document_id")
-  documentNumber     String             @unique @map("document_number")
-  applicationId      String             @map("application_id")
-  documentType       String             @map("document_type")
   filename           String
+  applicationId      String             @map("application_id")
+  comments           String?
+  documentId         String             @id @default(cuid()) @map("document_id")
   filePath           String             @map("file_path")
   fileSize           Int                @map("file_size")
-  mimeType           String             @map("mime_type")
+  rejectionReason    String?            @map("rejection_reason")
   uploadedAt         DateTime           @default(now()) @map("uploaded_at")
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
-  verifiedBy         String?            @map("verified_by")
   verifiedAt         DateTime?          @map("verified_at")
-  rejectionReason    String?            @map("rejection_reason")
-  comments           String?
+  verifiedBy         String?            @map("verified_by")
+  documentNumber     String             @unique @map("document_number")
+  documentType       String             @map("document_type")
+  mimeType           String             @map("mime_type")
   application        Application        @relation(fields: [applicationId], references: [applicationId])
   verifier           User?              @relation("DocumentVerifiedBy", fields: [verifiedBy], references: [userId])
 
@@ -114,27 +114,27 @@ model Document {
 }
 
 model Notification {
-  notificationId     String           @id @default(cuid()) @map("notification_id")
-  notificationNumber String           @unique @map("notification_number")
-  userId             String           @map("user_id")
   type               NotificationType
   subject            String
   message            String
-  sentAt             DateTime         @default(now()) @map("sent_at")
+  notificationId     String           @id @default(cuid()) @map("notification_id")
   readAt             DateTime?        @map("read_at")
+  sentAt             DateTime         @default(now()) @map("sent_at")
+  userId             String           @map("user_id")
+  notificationNumber String           @unique @map("notification_number")
   user               User             @relation(fields: [userId], references: [userId])
 
   @@map("notifications")
 }
 
 model WaitingListStat {
-  statId            String         @id @default(cuid()) @map("stat_id")
-  landBoardId       String         @map("land_board_id")
-  settlementType    SettlementType @map("settlement_type")
-  totalCount        Int            @default(0) @map("total_count")
-  eligibleCount     Int?           @default(0) @map("eligible_count")
-  oldestDate        DateTime?      @map("oldest_date")
   averageWaitMonths Float?         @default(0) @map("average_wait_months")
+  eligibleCount     Int?           @default(0) @map("eligible_count")
+  landBoardId       String         @map("land_board_id")
+  oldestDate        DateTime?      @map("oldest_date")
+  settlementType    SettlementType @map("settlement_type")
+  statId            String         @id @default(cuid()) @map("stat_id")
+  totalCount        Int            @default(0) @map("total_count")
   updatedAt         DateTime       @updatedAt @map("updated_at")
   landBoard         LandBoard      @relation(fields: [landBoardId], references: [landBoardId])
 
@@ -184,8 +184,8 @@ model TempDocument {
 enum Role {
   APPLICANT
   STAFF
-  MANAGER
   ADMIN
+  MANAGER
 }
 
 enum SettlementType {

@@ -1,5 +1,3 @@
-// frontend/src/App.jsx
-
 import React from 'react';
 import 'leaflet/dist/leaflet.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -14,7 +12,8 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-import ApplyPage from './pages/ApplyPage';
+// Replace ApplyPage with ApplicationForm
+import ApplicationForm from './components/application/ApplicationForm';
 import ProfilePage from './pages/ProfilePage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
@@ -53,10 +52,11 @@ function App() {
                 </AuthGuard>
               } />
               
+              {/* Updated to use ApplicationForm instead of ApplyPage */}
               <Route path="/apply" element={
                 <AuthGuard>
                   <RoleGuard allowedRoles={['APPLICANT']}>
-                    <ApplyPage />
+                    <ApplicationForm />
                   </RoleGuard>
                 </AuthGuard>
               } />

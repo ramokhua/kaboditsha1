@@ -238,6 +238,103 @@ const rebalanceQueuePositions = async (landBoardId, settlementType) => {
   }
 };
 
+// Get user's draft application
+const getDraftApplication = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const draft = await prisma.application.findFirst({
+      where: {
+        userId,
+        status: 'DRAFT'
+      },
+      include: {
+        landBoard: true,
+        documents: true
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+    
+    res.json(draft);
+  } catch (error) {
+    console.error('Error fetching draft:', error);
+    res.status(500).json({ error: 'Failed to fetch draft' });
+  }
+};
+
+// Save or update draft
+const saveDraft = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { landBoardId, settlementType, purpose, tempDocIds, maritalStatus, spouseName, email, phone, currentStep } = req.body;
+    
+    let draft = await prisma.application.findFirst({
+      where: { userId, status: 'DRAFT' }
+    });
+    
+    if (draft) {
+      // Update existing draft
+      draft = await prisma.application.update({
+        where: { applicationId: draft.applicationId },
+        data: {
+          landBoardId,
+          settlementType,
+          purpose,
+          maritalStatus,
+          spouseName,
+          email,
+          phone,
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // Create new draft
+      const year = new Date().getFullYear();
+      const count = await prisma.application.count();
+      const applicationNumber = `DRAFT${year}${(count + 1).toString().padStart(6, '0')}`;
+      
+      draft = await prisma.application.create({
+        data: {
+          applicationNumber,
+          referenceNumber: applicationNumber,
+          userId,
+          landBoardId,
+          settlementType,
+          purpose,
+          status: 'DRAFT',
+          queuePosition: null
+        }
+      });
+    }
+    
+    res.json(draft);
+  } catch (error) {
+    console.error('Error saving draft:', error);
+    res.status(500).json({ error: 'Failed to save draft' });
+  }
+};
+
+// Delete draft
+const deleteDraft = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    
+    await prisma.application.deleteMany({
+      where: {
+        applicationId: id,
+        userId,
+        status: 'DRAFT'
+      }
+    });
+    
+    res.json({ message: 'Draft deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    res.status(500).json({ error: 'Failed to delete draft' });
+  }
+};
+
 // ========== DOCUMENT MANAGEMENT ==========
 
 // Upload document for application
@@ -578,6 +675,9 @@ module.exports = {
   getApplicationById,
   updateStatus,
   rebalanceQueuePositions,
+  getDraftApplication,
+  saveDraft,
+  deleteDraft,
   
   // Document Management
   uploadDocument,

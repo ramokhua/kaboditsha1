@@ -1,14 +1,15 @@
-// src/components/dashboard/ApplicantDashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import api from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const ApplicantDashboard = () => {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [applications, setApplications] = useState([]);
+  const [draftApplications, setDraftApplications] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [queueData, setQueueData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -28,28 +29,32 @@ const ApplicantDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch applications
+      // Fetch all applications (including drafts)
       const appsResponse = await api.get('/applications/my');
-      const applicationsData = appsResponse.data;
-      setApplications(applicationsData);
+      const allApplications = appsResponse.data;
+      
+      // Separate drafts from submitted applications
+      const drafts = allApplications.filter(app => app.status === 'DRAFT');
+      const submitted = allApplications.filter(app => app.status !== 'DRAFT');
+      
+      setDraftApplications(drafts);
+      setApplications(submitted);
       
       // Fetch notifications
       const notifResponse = await api.get('/notifications?limit=5');
       const notificationsData = notifResponse.data?.notifications || [];
       setNotifications(notificationsData.slice(0, 5));
       
-      // Fetch queue details for ALL applications (including completed ones for reference)
-      // But especially for active ones
-      const queuePromises = applicationsData.map(async (app) => {
+      // Fetch queue details for active applications
+      const activeApps = submitted.filter(app => 
+        ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'].includes(app.status)
+      );
+      
+      const queuePromises = activeApps.map(async (app) => {
         try {
-          // Only fetch queue position for active applications
-          if (['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'].includes(app.status)) {
-            const response = await api.get(`/waiting-list/queue/position/${app.applicationId}`);
-            return { applicationId: app.applicationId, data: response.data };
-          }
-          return { applicationId: app.applicationId, data: null };
+          const response = await api.get(`/waiting-list/queue/position/${app.applicationId}`);
+          return { applicationId: app.applicationId, data: response.data };
         } catch (err) {
-          console.error(`Error fetching queue for ${app.applicationId}:`, err);
           return { applicationId: app.applicationId, data: null };
         }
       });
@@ -65,6 +70,7 @@ const ApplicantDashboard = () => {
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      addNotification('error', 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -92,9 +98,22 @@ const ApplicantDashboard = () => {
     }
   };
 
+  const deleteDraft = async (draftId) => {
+    if (window.confirm('Are you sure you want to delete this draft? This action cannot be undone.')) {
+      try {
+        await api.delete(`/applications/draft/${draftId}`);
+        addNotification('success', 'Draft deleted successfully');
+        fetchDashboardData(); // Refresh
+      } catch (error) {
+        console.error('Error deleting draft:', error);
+        addNotification('error', 'Failed to delete draft');
+      }
+    }
+  };
+
   const handleWithdraw = async () => {
     if (!withdrawReason.trim()) {
-      alert('Please provide a reason for withdrawal');
+      addNotification('error', 'Please provide a reason for withdrawal');
       return;
     }
 
@@ -105,17 +124,15 @@ const ApplicantDashboard = () => {
         notes: `Withdrawn by applicant. Reason: ${withdrawReason}`
       });
       
-      // Refresh dashboard data
-      await fetchDashboardData();
+      addNotification('success', 'Application withdrawn successfully');
       setShowWithdrawModal(false);
       setWithdrawReason('');
       setSelectedApplication(null);
-      
-      alert('Application withdrawn successfully');
+      fetchDashboardData();
       
     } catch (error) {
       console.error('Error withdrawing application:', error);
-      alert(error.response?.data?.error || 'Failed to withdraw application');
+      addNotification('error', error.response?.data?.error || 'Failed to withdraw application');
     } finally {
       setWithdrawing(false);
     }
@@ -128,6 +145,7 @@ const ApplicantDashboard = () => {
 
   const getStatusBadge = (status) => {
     const colors = {
+      DRAFT: 'bg-gray-100 text-gray-800',
       SUBMITTED: 'bg-blue-100 text-blue-800',
       UNDER_REVIEW: 'bg-yellow-100 text-yellow-800',
       DOCUMENTS_VERIFIED: 'bg-green-100 text-green-800',
@@ -140,6 +158,7 @@ const ApplicantDashboard = () => {
 
   const getStatusText = (status) => {
     const texts = {
+      DRAFT: 'Draft',
       SUBMITTED: 'Submitted',
       UNDER_REVIEW: 'Under Review',
       DOCUMENTS_VERIFIED: 'Verified',
@@ -157,21 +176,20 @@ const ApplicantDashboard = () => {
   const getQueueDisplay = (app) => {
     const data = queueData[app.applicationId];
     
-    // If application is completed, show status
     if (app.status === 'APPROVED') return 'Approved ✓';
     if (app.status === 'REJECTED') return 'Rejected ✗';
     if (app.status === 'WITHDRAWN') return 'Withdrawn';
+    if (app.status === 'DRAFT') return 'Not submitted';
     
-    // If we have queue data, show position with total
     if (data && data.totalWaiting !== undefined) {
       return `${data.queuePosition} of ${data.totalWaiting.toLocaleString()}`;
     }
     
-    // If we're still loading, show loading
-    if (!data && loading) return 'Loading...';
-    
-    // Fallback
     return `${app.queuePosition || '?'} of ?`;
+  };
+
+  const resumeDraft = (draftId) => {
+    window.location.href = `/apply?resume=${draftId}`;
   };
 
   if (loading) {
@@ -199,28 +217,98 @@ const ApplicantDashboard = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content - Applications Table */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Stats Cards */}
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-4 gap-4">
               <div className="bg-white rounded-xl shadow-lg p-4">
-                <p className="text-sm text-gray-500 mb-1">Total Applications</p>
-                <p className="text-3xl font-bold text-[#2C1810]">{applications.length}</p>
+                <p className="text-sm text-gray-500 mb-1">Total Apps</p>
+                <p className="text-2xl font-bold text-[#2C1810]">{applications.length}</p>
               </div>
               <div className="bg-white rounded-xl shadow-lg p-4">
                 <p className="text-sm text-gray-500 mb-1">Active Queue</p>
-                <p className="text-3xl font-bold text-[#B45F3A]">
+                <p className="text-2xl font-bold text-[#B45F3A]">
                   {activeApplications.length}
                 </p>
-                <p className="text-xs text-gray-500">applications waiting</p>
               </div>
               <div className="bg-white rounded-xl shadow-lg p-4">
                 <p className="text-sm text-gray-500 mb-1">Approved</p>
-                <p className="text-3xl font-bold text-[#1F4A2B]">
+                <p className="text-2xl font-bold text-[#1F4A2B]">
                   {applications.filter(a => a.status === 'APPROVED').length}
                 </p>
               </div>
+              <div className="bg-white rounded-xl shadow-lg p-4">
+                <p className="text-sm text-gray-500 mb-1">Drafts</p>
+                <p className="text-2xl font-bold text-gray-500">
+                  {draftApplications.length}
+                </p>
+              </div>
             </div>
+
+            {/* DRAFT Applications Section */}
+            {draftApplications.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 bg-amber-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-[#2C1810] flex items-center gap-2">
+                        <span className="text-xl">📝</span> Saved Drafts
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Resume your incomplete applications
+                      </p>
+                    </div>
+                    <Link
+                      to="/apply"
+                      className="px-4 py-2 bg-[#2C1810] text-white rounded-lg hover:bg-[#3d2418] transition-colors text-sm"
+                    >
+                      + New Application
+                    </Link>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Land Board</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Saved</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {draftApplications.map((draft) => (
+                        <tr key={draft.applicationId} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {draft.landBoard?.name || 'Not selected'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {draft.settlementType || 'Not selected'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(draft.updatedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <button
+                              onClick={() => resumeDraft(draft.applicationId)}
+                              className="text-[#B45F3A] hover:text-[#2C1810] mr-3 font-medium"
+                            >
+                              Resume
+                            </button>
+                            <button
+                              onClick={() => deleteDraft(draft.applicationId)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Active Applications Table */}
             {activeApplications.length > 0 && (
@@ -235,24 +323,12 @@ const ApplicantDashboard = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Land Board
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Queue Position
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Submitted
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Land Board</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Queue Position</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -265,7 +341,6 @@ const ApplicantDashboard = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 py-1 rounded-full text-xs ${
-                                app.settlementType === 'CITY' ? 'bg-blue-100 text-blue-800' :
                                 app.settlementType === 'TOWN' ? 'bg-green-100 text-green-800' :
                                 app.settlementType === 'VILLAGE' ? 'bg-yellow-100 text-yellow-800' :
                                 'bg-purple-100 text-purple-800'
@@ -321,21 +396,11 @@ const ApplicantDashboard = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Land Board
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Submitted
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Land Board</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -346,7 +411,6 @@ const ApplicantDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 rounded-full text-xs ${
-                              app.settlementType === 'CITY' ? 'bg-blue-100 text-blue-800' :
                               app.settlementType === 'TOWN' ? 'bg-green-100 text-green-800' :
                               app.settlementType === 'VILLAGE' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-purple-100 text-purple-800'
@@ -379,7 +443,7 @@ const ApplicantDashboard = () => {
             )}
 
             {/* No Applications Message */}
-            {applications.length === 0 && (
+            {applications.length === 0 && draftApplications.length === 0 && (
               <div className="bg-white rounded-xl shadow-lg p-8 text-center">
                 <p className="text-gray-600 mb-4">You haven't submitted any applications yet.</p>
                 <Link to="/apply" className="btn-primary inline-block">

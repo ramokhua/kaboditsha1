@@ -25,4 +25,7 @@ router.put('/documents/:id/verify', staffController.verifyDocument);
 // Add note to application
 router.post('/applications/:id/notes', staffController.addNote);
 
+// Rebalance queue positions after bulk updates
+router.post('/rebalance-queue', staffController.rebalanceQueuePositions);
+
 module.exports = router;

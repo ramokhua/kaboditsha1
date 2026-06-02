@@ -36,6 +36,10 @@ const getStats = async (req, res) => {
       where: { landBoardId: staff.landBoardId, status: 'REJECTED' }
     });
 
+    const withdrawn = await prisma.application.count({
+      where: { landBoardId: staff.landBoardId, status: 'WITHDRAWN' }
+    });
+
     const pendingDocuments = await prisma.document.count({
       where: {
         application: { landBoardId: staff.landBoardId },
@@ -49,8 +53,9 @@ const getStats = async (req, res) => {
       verified,
       approved,
       rejected,
+      withdrawn,
       pendingDocuments,
-      total: pending + underReview + verified + approved + rejected
+      total: pending + underReview + verified + approved + rejected + withdrawn
     });
   } catch (error) {
     console.error('Error fetching staff stats:', error);
@@ -445,11 +450,62 @@ const addNote = async (req, res) => {
   }
 };
 
+// Rebalance queue positions for staff's land board
+const rebalanceQueuePositions = async (req, res) => {
+  try {
+    const staff = await prisma.user.findUnique({
+      where: { userId: req.user.userId },
+      select: { landBoardId: true }
+    });
+
+    if (!staff.landBoardId) {
+      return res.status(400).json({ error: 'Staff not assigned to any land board' });
+    }
+
+    const settlementTypes = ['TOWN', 'VILLAGE', 'FARM'];
+    let totalUpdated = 0;
+
+    for (const settlementType of settlementTypes) {
+      const activeApps = await prisma.application.findMany({
+        where: {
+          landBoardId: staff.landBoardId,
+          settlementType,
+          status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'] }
+        },
+        orderBy: { submittedAt: 'asc' }
+      });
+
+      for (let i = 0; i < activeApps.length; i++) {
+        await prisma.application.update({
+          where: { applicationId: activeApps[i].applicationId },
+          data: { queuePosition: i + 1 }
+        });
+        totalUpdated++;
+      }
+    }
+
+    await createAuditLog(
+      req.user.userId,
+      `Rebalanced queue positions for land board - updated ${totalUpdated} positions`,
+      req.ip
+    );
+
+    res.json({ 
+      message: `Queue positions rebalanced successfully`,
+      updated: totalUpdated
+    });
+  } catch (error) {
+    console.error('Error rebalancing queue positions:', error);
+    res.status(500).json({ error: 'Failed to rebalance queue positions' });
+  }
+};
+
 module.exports = {
   getStats,
   getBoardApplications,
   getApplicationDetails,
   updateApplicationStatus,
   verifyDocument,
-  addNote
+  addNote,
+  rebalanceQueuePositions
 };
