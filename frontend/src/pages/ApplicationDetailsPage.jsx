@@ -1,5 +1,3 @@
-// frontend/src/pages/ApplicationDetailsPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
@@ -61,11 +59,8 @@ const ApplicationDetailsPage = () => {
       
       addNotification('success', 'Application withdrawn successfully');
       setShowWithdrawModal(false);
-      
-      // Refresh application details
       await fetchApplicationDetails();
       
-      // Navigate back after 2 seconds
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
@@ -126,6 +121,61 @@ const ApplicationDetailsPage = () => {
     };
   };
 
+  // Status Timeline Component
+  const StatusTimeline = ({ currentStatus, history }) => {
+    const statusOrder = ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED', 'APPROVED'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    
+    // Get status change dates from history
+    const getStatusDate = (status) => {
+      const entry = history?.find(h => h.status === status);
+      return entry ? new Date(entry.changedAt).toLocaleDateString() : null;
+    };
+
+    if (currentStatus === 'REJECTED' || currentStatus === 'WITHDRAWN') {
+      return (
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <p className="text-red-700 font-medium">
+            {currentStatus === 'REJECTED' ? 'Application Rejected' : 'Application Withdrawn'}
+          </p>
+          <p className="text-red-600 text-sm mt-1">
+            {currentStatus === 'REJECTED' 
+              ? application?.rejectionReason || 'No reason provided'
+              : `Withdrawn on ${new Date(application?.updatedAt).toLocaleDateString()}`}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-8">
+        <h3 className="font-semibold text-gray-800 mb-4">Application Timeline</h3>
+        <div className="relative">
+          <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200"></div>
+          <div className="relative flex justify-between">
+            {statusOrder.map((status, idx) => {
+              const isCompleted = idx <= currentIndex;
+              const statusDate = getStatusDate(status);
+              return (
+                <div key={status} className="text-center flex-1">
+                  <div className={`w-10 h-10 rounded-full mx-auto flex items-center justify-center z-10 relative ${
+                    isCompleted ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'
+                  }`}>
+                    {isCompleted ? '✓' : idx + 1}
+                  </div>
+                  <p className="text-xs mt-2 font-medium">{status.replace('_', ' ')}</p>
+                  {statusDate && (
+                    <p className="text-xs text-gray-400 mt-1">{statusDate}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -182,6 +232,12 @@ const ApplicationDetailsPage = () => {
 
             {/* Content */}
             <div className="p-6 space-y-8">
+              {/* Timeline */}
+              <StatusTimeline 
+                currentStatus={application.status} 
+                history={application.statusHistory}
+              />
+
               {/* Queue Position */}
               <div className="bg-[#F5E6D3] p-6 rounded-lg">
                 <h2 className="text-xl font-bold text-[#2C1810] mb-4">Queue Position</h2>
@@ -298,55 +354,6 @@ const ApplicationDetailsPage = () => {
                 ) : (
                   <p className="text-[#4A4A4A] italic">No documents uploaded yet.</p>
                 )}
-              </div>
-
-              {/* Timeline */}
-              <div>
-                <h2 className="text-xl font-bold text-[#2C1810] mb-4">Timeline</h2>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <div className="w-28 text-sm text-[#4A4A4A]">
-                      {new Date(application.submittedAt).toLocaleDateString()}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-[#2C1810]">Application Submitted</p>
-                      <p className="text-sm text-[#4A4A4A]">Your application was received</p>
-                    </div>
-                  </div>
-                  {application.reviewedAt && (
-                    <div className="flex items-start">
-                      <div className="w-28 text-sm text-[#4A4A4A]">
-                        {new Date(application.reviewedAt).toLocaleDateString()}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-[#2C1810]">Application Reviewed</p>
-                        <p className="text-sm text-[#4A4A4A]">Staff reviewed your application</p>
-                      </div>
-                    </div>
-                  )}
-                  {application.approvedAt && (
-                    <div className="flex items-start">
-                      <div className="w-28 text-sm text-[#4A4A4A]">
-                        {new Date(application.approvedAt).toLocaleDateString()}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-[#2C1810]">Application Approved</p>
-                        <p className="text-sm text-[#4A4A4A]">Congratulations! Your application was approved</p>
-                      </div>
-                    </div>
-                  )}
-                  {application.status === 'WITHDRAWN' && application.updatedAt && (
-                    <div className="flex items-start">
-                      <div className="w-28 text-sm text-[#4A4A4A]">
-                        {new Date(application.updatedAt).toLocaleDateString()}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-[#2C1810]">Application Withdrawn</p>
-                        <p className="text-sm text-[#4A4A4A]">You withdrew this application</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
 
               {/* Notes */}

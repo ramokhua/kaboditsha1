@@ -1,8 +1,7 @@
-// frontend/src/pages/RegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import api from '../services/api';
 
 const RegisterPage = () => {
@@ -12,7 +11,8 @@ const RegisterPage = () => {
     omangNumber: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    smsOptIn: false
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -66,14 +66,15 @@ const RegisterPage = () => {
   };
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     });
-    if (errors[e.target.name]) {
+    if (errors[name]) {
       setErrors({
         ...errors,
-        [e.target.name]: null
+        [name]: null
       });
     }
   };
@@ -88,7 +89,7 @@ const RegisterPage = () => {
     setLoading(true);
     
     try {
-      const { confirmPassword, ...userData } = formData;
+      const { confirmPassword, smsOptIn, ...userData } = formData;
       const response = await api.post('/auth/register', userData);
       
       if (response.data.message || response.data.requiresVerification) {
@@ -96,14 +97,14 @@ const RegisterPage = () => {
         setSuccessMessage(response.data.message || 'Account created successfully! Please check your email to verify your account.');
         setShowSuccessModal(true);
         
-        // Reset form
         setFormData({
           fullName: '',
           email: '',
           omangNumber: '',
           phone: '',
           password: '',
-          confirmPassword: ''
+          confirmPassword: '',
+          smsOptIn: false
         });
       }
     } catch (error) {
@@ -238,6 +239,23 @@ const RegisterPage = () => {
                 </div>
               </div>
 
+              {/* SMS Opt-In Checkbox */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="smsOptIn"
+                    checked={formData.smsOptIn}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-[#B45F3A] rounded focus:ring-[#B45F3A]"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">📱 I want to receive SMS updates about my application</span>
+                    <p className="text-xs text-gray-500 mt-0.5">Standard message rates may apply. You can opt out at any time.</p>
+                  </div>
+                </label>
+              </div>
+
               <div className="bg-[#2C1810]/5 p-4 rounded-lg border border-[#8B4513]/20">
                 <p className="text-sm text-gray-700">
                   <span className="font-bold">Note:</span> By creating an account, you confirm that:
@@ -283,7 +301,7 @@ const RegisterPage = () => {
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center transform animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-[#2C1810] mb-2">Registration Successful!</h3>
             <p className="text-gray-600 mb-4">{successMessage}</p>

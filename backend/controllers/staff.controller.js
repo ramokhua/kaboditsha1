@@ -91,7 +91,10 @@ const getBoardApplications = async (req, res) => {
         documents: { select: { documentId: true, documentType: true, filename: true, verificationStatus: true, uploadedAt: true } },
         _count: { select: { documents: true } }
       },
-      orderBy: [{ status: 'asc' }, { submittedAt: 'asc' }]
+      orderBy: [
+        { status: 'asc' },
+        { queuePosition: 'asc' }
+      ]
     });
 
     res.json(applications);
@@ -237,7 +240,6 @@ const updateApplicationStatus = async (req, res) => {
       application.applicationId
     );
 
-    // Send email notification on status change
     if (oldStatus !== status) {
       console.log('Status changed from', oldStatus, 'to', status);
       console.log('Sending email to:', application.user.email);
@@ -314,7 +316,6 @@ const verifyDocument = async (req, res) => {
       req.ip
     );
 
-    // Create in-app notification for document verification
     const docStatusMessage = status === 'APPROVED' ? 'approved' : 'needs revision';
     await createInAppNotification(
       document.application.user.userId,
@@ -323,7 +324,6 @@ const verifyDocument = async (req, res) => {
       document.applicationId
     );
 
-    // Send email for document verification
     try {
       await sendEmail(
         document.application.user.email,
@@ -339,7 +339,6 @@ const verifyDocument = async (req, res) => {
       console.error('Failed to send document verification email:', emailError);
     }
 
-    // Check if all documents are verified
     const allDocs = await prisma.document.findMany({
       where: { applicationId: document.applicationId }
     });
@@ -380,7 +379,6 @@ const verifyDocument = async (req, res) => {
         req.ip
       );
       
-      // Send email about status change
       try {
         await sendEmail(
           document.application.user.email,
