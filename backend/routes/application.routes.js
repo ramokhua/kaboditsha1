@@ -1,4 +1,3 @@
-// backend/routes/application.routes.js
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
@@ -20,7 +19,14 @@ router.get('/all', applicationController.getAllApplications);
 // ========== PROTECTED ROUTES (Authentication required) ==========
 router.use(authenticate);
 
-// Application CRUD
+// ========== DRAFT ROUTES ==========
+router.get('/draft', applicationController.getDraftApplication);
+router.get('/draft/:id', applicationController.getDraftById);
+router.post('/draft', applicationController.saveDraft);
+router.put('/draft/:id', applicationController.updateDraft);
+router.delete('/draft/:id', applicationController.deleteDraft);
+
+// ========== APPLICATION CRUD ==========
 router.get('/my', applicationController.getMyApplications);
 router.post('/',
   [
@@ -32,11 +38,8 @@ router.post('/',
 );
 router.get('/:id', applicationController.getApplicationById);
 router.put('/:id/status', applicationController.updateStatus);
-router.get('/draft', authenticate, applicationController.getDraftApplication);
-router.post('/draft', authenticate, applicationController.saveDraft);
-router.delete('/draft/:id', authenticate, applicationController.deleteDraft);
 
-// Document routes
+// ========== DOCUMENT ROUTES ==========
 router.post('/:id/documents', upload.single('document'), applicationController.uploadDocument);
 router.get('/:id/documents', applicationController.getApplicationDocuments);
 router.delete('/documents/:id', applicationController.deleteDocument);

@@ -201,6 +201,7 @@ enum ApplicationStatus {
   APPROVED
   REJECTED
   WITHDRAWN
+  DRAFT
 }
 
 enum BoardType {

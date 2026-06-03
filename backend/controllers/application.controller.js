@@ -1,4 +1,3 @@
-// backend/controllers/application.controller.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { sendEmail } = require('../services/email.service');
@@ -235,103 +234,6 @@ const rebalanceQueuePositions = async (landBoardId, settlementType) => {
   } catch (error) {
     console.error('Error rebalancing queue positions:', error);
     throw error;
-  }
-};
-
-// Get user's draft application
-const getDraftApplication = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    
-    const draft = await prisma.application.findFirst({
-      where: {
-        userId,
-        status: 'DRAFT'
-      },
-      include: {
-        landBoard: true,
-        documents: true
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
-    
-    res.json(draft);
-  } catch (error) {
-    console.error('Error fetching draft:', error);
-    res.status(500).json({ error: 'Failed to fetch draft' });
-  }
-};
-
-// Save or update draft
-const saveDraft = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const { landBoardId, settlementType, purpose, tempDocIds, maritalStatus, spouseName, email, phone, currentStep } = req.body;
-    
-    let draft = await prisma.application.findFirst({
-      where: { userId, status: 'DRAFT' }
-    });
-    
-    if (draft) {
-      // Update existing draft
-      draft = await prisma.application.update({
-        where: { applicationId: draft.applicationId },
-        data: {
-          landBoardId,
-          settlementType,
-          purpose,
-          maritalStatus,
-          spouseName,
-          email,
-          phone,
-          updatedAt: new Date()
-        }
-      });
-    } else {
-      // Create new draft
-      const year = new Date().getFullYear();
-      const count = await prisma.application.count();
-      const applicationNumber = `DRAFT${year}${(count + 1).toString().padStart(6, '0')}`;
-      
-      draft = await prisma.application.create({
-        data: {
-          applicationNumber,
-          referenceNumber: applicationNumber,
-          userId,
-          landBoardId,
-          settlementType,
-          purpose,
-          status: 'DRAFT',
-          queuePosition: null
-        }
-      });
-    }
-    
-    res.json(draft);
-  } catch (error) {
-    console.error('Error saving draft:', error);
-    res.status(500).json({ error: 'Failed to save draft' });
-  }
-};
-
-// Delete draft
-const deleteDraft = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.userId;
-    
-    await prisma.application.deleteMany({
-      where: {
-        applicationId: id,
-        userId,
-        status: 'DRAFT'
-      }
-    });
-    
-    res.json({ message: 'Draft deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting draft:', error);
-    res.status(500).json({ error: 'Failed to delete draft' });
   }
 };
 
@@ -666,6 +568,174 @@ async function calculateAverageWaitTime(landBoardId, settlementType) {
   return totalDays / approvedApps.length;
 }
 
+// ========== DRAFT APPLICATION ENDPOINTS ==========
+
+// Get user's draft application
+const getDraftApplication = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const draft = await prisma.application.findFirst({
+      where: {
+        userId,
+        status: 'DRAFT'
+      },
+      include: {
+        landBoard: true,
+        documents: true
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+    
+    res.json(draft);
+  } catch (error) {
+    console.error('Error fetching draft:', error);
+    res.status(500).json({ error: 'Failed to fetch draft' });
+  }
+};
+
+// Get specific draft by ID
+const getDraftById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    
+    const draft = await prisma.application.findFirst({
+      where: {
+        applicationId: id,
+        userId,
+        status: 'DRAFT'
+      },
+      include: {
+        landBoard: true,
+        documents: true
+      }
+    });
+    
+    if (!draft) {
+      return res.status(404).json({ error: 'Draft not found' });
+    }
+    
+    res.json(draft);
+  } catch (error) {
+    console.error('Error fetching draft by ID:', error);
+    res.status(500).json({ error: 'Failed to fetch draft' });
+  }
+};
+
+// Save or update draft
+const saveDraft = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { landBoardId, settlementType, purpose, tempDocIds, maritalStatus, spouseName, email, phone, currentStep } = req.body;
+    
+    let draft = await prisma.application.findFirst({
+      where: { userId, status: 'DRAFT' }
+    });
+    
+    if (draft) {
+      // Update existing draft
+      draft = await prisma.application.update({
+        where: { applicationId: draft.applicationId },
+        data: {
+          landBoardId: landBoardId || null,
+          settlementType: settlementType || null,
+          purpose: purpose || null,
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // Create new draft
+      const year = new Date().getFullYear();
+      const count = await prisma.application.count();
+      const applicationNumber = `DRAFT${year}${(count + 1).toString().padStart(6, '0')}`;
+      
+      draft = await prisma.application.create({
+        data: {
+          applicationNumber,
+          referenceNumber: applicationNumber,
+          userId,
+          landBoardId: landBoardId || null,
+          settlementType: settlementType || null,
+          purpose: purpose || null,
+          status: 'DRAFT',
+          queuePosition: null
+        }
+      });
+    }
+    
+    res.json(draft);
+  } catch (error) {
+    console.error('Error saving draft:', error);
+    res.status(500).json({ error: 'Failed to save draft' });
+  }
+};
+
+// Update existing draft
+const updateDraft = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const { landBoardId, settlementType, purpose, tempDocIds, maritalStatus, spouseName, email, phone, currentStep } = req.body;
+    
+    const draft = await prisma.application.findFirst({
+      where: {
+        applicationId: id,
+        userId,
+        status: 'DRAFT'
+      }
+    });
+    
+    if (!draft) {
+      return res.status(404).json({ error: 'Draft not found' });
+    }
+    
+    const updated = await prisma.application.update({
+      where: { applicationId: id },
+      data: {
+        landBoardId: landBoardId || null,
+        settlementType: settlementType || null,
+        purpose: purpose || null,
+        updatedAt: new Date()
+      }
+    });
+    
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating draft:', error);
+    res.status(500).json({ error: 'Failed to update draft' });
+  }
+};
+
+// Delete draft
+const deleteDraft = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    
+    const draft = await prisma.application.findFirst({
+      where: {
+        applicationId: id,
+        userId,
+        status: 'DRAFT'
+      }
+    });
+    
+    if (!draft) {
+      return res.status(404).json({ error: 'Draft not found' });
+    }
+    
+    await prisma.application.delete({
+      where: { applicationId: id }
+    });
+    
+    res.json({ message: 'Draft deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    res.status(500).json({ error: 'Failed to delete draft' });
+  }
+};
+
 // ========== EXPORTS ==========
 
 module.exports = {
@@ -675,9 +745,6 @@ module.exports = {
   getApplicationById,
   updateStatus,
   rebalanceQueuePositions,
-  getDraftApplication,
-  saveDraft,
-  deleteDraft,
   
   // Document Management
   uploadDocument,
@@ -693,5 +760,12 @@ module.exports = {
   getGenderStats,
   getStatusStats,
   getAllApplications,
-  refreshWaitingListStatsForBoard
+  refreshWaitingListStatsForBoard,
+  
+  // Draft endpoints
+  getDraftApplication,
+  getDraftById,
+  saveDraft,
+  updateDraft,
+  deleteDraft
 };

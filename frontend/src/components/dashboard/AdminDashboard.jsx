@@ -1,5 +1,3 @@
-// frontend/src/components/dashboard/AdminDashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -91,185 +89,105 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] py-8">
+    <div className="min-h-screen bg-[#F5E6D3] dark:bg-gray-900 py-8 transition-colors duration-200">
       <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold text-[#2C1810] mb-8">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-[#2C1810] dark:text-white mb-8">Admin Dashboard</h1>
 
-        {/* Top Navigation Tabs */}
-        <div className="border-b border-gray-200 mb-6">
+        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
           <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'users'
-                  ? 'border-[#B45F3A] text-[#B45F3A]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              👥 Users
-              <span className="ml-2 text-xs text-gray-400">({filteredUsers.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('boards')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'boards'
-                  ? 'border-[#B45F3A] text-[#B45F3A]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              🏛️ Land Boards
-              <span className="ml-2 text-xs text-gray-400">({filteredBoards.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'audit'
-                  ? 'border-[#B45F3A] text-[#B45F3A]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📋 Audit Logs
-              <span className="ml-2 text-xs text-gray-400">({filteredLogs.length})</span>
-            </button>
+            <button onClick={() => setActiveTab('users')} className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'users' ? 'border-[#B45F3A] text-[#B45F3A]' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>👥 Users <span className="ml-2 text-xs text-gray-400">({filteredUsers.length})</span></button>
+            <button onClick={() => setActiveTab('boards')} className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'boards' ? 'border-[#B45F3A] text-[#B45F3A]' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>🏛️ Land Boards <span className="ml-2 text-xs text-gray-400">({filteredBoards.length})</span></button>
+            <button onClick={() => setActiveTab('audit')} className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'audit' ? 'border-[#B45F3A] text-[#B45F3A]' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}>📋 Audit Logs <span className="ml-2 text-xs text-gray-400">({filteredLogs.length})</span></button>
           </nav>
         </div>
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-[#2C1810]">User Management</h2>
-                <p className="text-sm text-gray-500 mt-1">Manage system users and their roles</p>
-              </div>
-              <div className="w-80">
-                <SearchBar onSearch={handleUserSearch} placeholder="Search by name, email, role..." />
-              </div>
+              <div><h2 className="text-xl font-bold text-[#2C1810] dark:text-white">User Management</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage system users and their roles</p></div>
+              <div className="w-80"><SearchBar onSearch={handleUserSearch} placeholder="Search by name, email, role..." /></div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th></tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredUsers.slice(0, 50).map((user) => (
-                    <tr key={user.userId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
-                        <div className="text-sm text-gray-500">ID: {user.userNumber}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                    <tr key={user.userId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900 dark:text-white">{user.fullName}</div><div className="text-sm text-gray-500 dark:text-gray-400">ID: {user.userNumber}</div></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs rounded-full ${
-                          user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-                          user.role === 'MANAGER' ? 'bg-blue-100 text-blue-800' :
-                          user.role === 'STAFF' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {user.role}
-                        </span>
+                          user.role === 'ADMIN' ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300' :
+                          user.role === 'MANAGER' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' :
+                          user.role === 'STAFF' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' :
+                          'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                        }`}>{user.role}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phone || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button className="text-[#B45F3A] hover:text-[#2C1810]">Edit</button>
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.phone || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm"><button className="text-[#B45F3A] hover:text-[#2C1810] dark:hover:text-[#D4A574]">Edit</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredUsers.length === 0 && <div className="text-center py-8 text-gray-500">No users found</div>}
+              {filteredUsers.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No users found</div>}
             </div>
           </div>
         )}
 
         {/* Land Boards Tab */}
         {activeTab === 'boards' && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-[#2C1810]">Land Board Management</h2>
-                <p className="text-sm text-gray-500 mt-1">Manage land boards and subordinate boards</p>
-              </div>
-              <div className="w-80">
-                <SearchBar onSearch={handleBoardSearch} placeholder="Search by name, region..." />
-              </div>
+              <div><h2 className="text-xl font-bold text-[#2C1810] dark:text-white">Land Board Management</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage land boards and subordinate boards</p></div>
+              <div className="w-80"><SearchBar onSearch={handleBoardSearch} placeholder="Search by name, region..." /></div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Region</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th></tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredBoards.map((board) => (
-                    <tr key={board.landBoardId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{board.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{board.region}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${board.type === 'MAIN' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {board.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button className="text-[#B45F3A] hover:text-[#2C1810]">Edit</button>
-                      </td>
+                    <tr key={board.landBoardId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{board.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{board.region}</td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 text-xs rounded-full ${board.type === 'MAIN' ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}>{board.type}</span></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm"><button className="text-[#B45F3A] hover:text-[#2C1810] dark:hover:text-[#D4A574]">Edit</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredBoards.length === 0 && <div className="text-center py-8 text-gray-500">No boards found</div>}
+              {filteredBoards.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No boards found</div>}
             </div>
           </div>
         )}
 
         {/* Audit Logs Tab */}
         {activeTab === 'audit' && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-[#2C1810]">Audit Logs</h2>
-                <p className="text-sm text-gray-500 mt-1">Track all system actions</p>
-              </div>
-              <div className="w-80">
-                <SearchBar onSearch={handleLogSearch} placeholder="Search by action, user..." />
-              </div>
+              <div><h2 className="text-xl font-bold text-[#2C1810] dark:text-white">Audit Logs</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track all system actions</p></div>
+              <div className="w-80"><SearchBar onSearch={handleLogSearch} placeholder="Search by action, user..." /></div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </tr>
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Timestamp</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th><th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th></tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredLogs.slice(0, 50).map((log) => (
-                    <tr key={log.auditLogId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(log.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {log.user?.email || 'System'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-md truncate">
-                        {log.action}
-                      </td>
+                    <tr key={log.auditLogId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{new Date(log.timestamp).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{log.user?.email || 'System'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-md truncate">{log.action}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filteredLogs.length === 0 && <div className="text-center py-8 text-gray-500">No logs found</div>}
+              {filteredLogs.length === 0 && <div className="text-center py-8 text-gray-500 dark:text-gray-400">No logs found</div>}
             </div>
           </div>
         )}

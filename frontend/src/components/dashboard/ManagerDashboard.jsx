@@ -272,10 +272,10 @@ const ManagerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5E6D3] to-[#E8D9C4] py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#F5E6D3] to-[#E8D9C4] dark:from-gray-900 dark:to-gray-800 py-8 transition-colors duration-200">
       <div className="container mx-auto max-w-7xl px-4" ref={dashboardRef}>
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-8">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-[#2C1810]">Manager Dashboard</h1>
@@ -308,7 +308,7 @@ const ManagerDashboard = () => {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8 bg-white rounded-t-xl px-6 pt-4">
+        <div className="border-b border-gray-200 dark:border-gray-700 mb-8 bg-white dark:bg-gray-800 rounded-t-xl px-6 pt-4">
           <nav className="flex space-x-8">
             <button
               onClick={() => setActiveTab('analytics')}
@@ -337,10 +337,10 @@ const ManagerDashboard = () => {
         {activeTab === 'analytics' && (
           <>
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
               {/* Monthly Trends - Area Chart */}
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <h2 className="text-xl font-bold text-[#2C1810] mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <h2 className="text-xl font-bold text-[#2C1810] dark:text-white mb-4 flex items-center">
                   <span className="w-3 h-3 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] rounded-full mr-2"></span>
                   Application Trends
                 </h2>
@@ -368,8 +368,8 @@ const ManagerDashboard = () => {
               </div>
 
               {/* Status Distribution - Pie Chart */}
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <h2 className="text-xl font-bold text-[#2C1810] mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <h2 className="text-xl font-bold text-[#2C1810] dark:text-white mb-4 flex items-center">
                   <span className="w-3 h-3 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] rounded-full mr-2"></span>
                   Application Status Distribution
                 </h2>
@@ -408,8 +408,8 @@ const ManagerDashboard = () => {
 
             {/* Gender Distribution - Full width */}
             <div className="grid grid-cols-1 gap-8 mb-8">
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <h2 className="text-xl font-bold text-[#2C1810] mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <h2 className="text-xl font-bold text-[#2C1810] dark:text-white mb-4 flex items-center">
                   <span className="w-3 h-3 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] rounded-full mr-2"></span>
                   Gender Distribution of Applicants
                 </h2>
@@ -484,7 +484,7 @@ const ManagerDashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Regional Performance - Radar Chart */}
-              <div className="bg-white rounded-2xl shadow-xl p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <h2 className="text-xl font-bold text-[#2C1810] mb-4 flex items-center">
                   <span className="w-3 h-3 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] rounded-full mr-2"></span>
                   Regional Performance Metrics
@@ -503,8 +503,8 @@ const ManagerDashboard = () => {
               </div>
 
               {/* Turnaround Time Trend */}
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <h2 className="text-xl font-bold text-[#2C1810] mb-4 flex items-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <h2 className="text-xl font-bold text-[#2C1810] dark:text-white mb-4 flex items-center">
                   <span className="w-3 h-3 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] rounded-full mr-2"></span>
                   Application Turnaround Time (Days)
                 </h2>
@@ -525,11 +525,11 @@ const ManagerDashboard = () => {
 
         {/* Audit Trail Tab */}
         {activeTab === 'audit' && (
-          <div className="bg-white rounded-2xl shadow-xl p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
               <div>
-                <h2 className="text-xl font-bold text-[#2C1810]">Audit Trail</h2>
-                <p className="text-sm text-gray-500 mt-1">Track all system actions and changes</p>
+                <h2 className="text-xl font-bold text-[#2C1810] dark:text-white">Audit Trail</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track all system actions and changes</p>
               </div>
               <div className="w-80">
                 <SearchBar onSearch={handleAuditSearch} placeholder="Search by action or user..." />
@@ -537,23 +537,23 @@ const ManagerDashboard = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr key={log.auditLogId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Timestamp</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredLogs.slice(0, 100).map((log) => (
-                    <tr key={log.auditLogId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <tr key={log.auditLogId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {new Date(log.timestamp).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {log.user?.email || 'System'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-md truncate">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-md truncate">
                         {log.action}
                       </td>
                     </tr>
@@ -561,14 +561,14 @@ const ManagerDashboard = () => {
                 </tbody>
               </table>
               {filteredLogs.length === 0 && (
-                <div className="text-center py-8 text-gray-500">No audit logs found</div>
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">No audit logs found</div>
               )}
             </div>
           </div>
         )}
 
         {/* Footer Note */}
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Data updated in real-time • Report generated on {new Date().toLocaleString()}</p>
         </div>
       </div>

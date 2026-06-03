@@ -1,5 +1,3 @@
-// frontend/src/pages/HomePage.jsx
-
 import React from 'react';
 import 'leaflet/dist/leaflet.css';
 import HeroSection from '../components/home/HeroSection';
@@ -14,7 +12,7 @@ import SmartBoardMatcher from '../components/home/SmartBoardMatcher';
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F5E6D3] to-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#F5E6D3] to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-200">
       {/* 1. Hero Section */}
       <HeroSection />
       
@@ -22,25 +20,25 @@ const HomePage = () => {
       <BeforeYouApply />
       
       {/* 3. Smart Board Matcher */}
-      <section className="py-12 bg-gradient-to-r from-white to-[#F5E6D3]">
+      <section className="py-12 bg-gradient-to-r from-white to-[#F5E6D3] dark:from-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4">
           <SmartBoardMatcher />
         </div>
       </section>
       
       {/* 4. Analytics Section */}
-      <section className="py-16 bg-gradient-to-b from-white to-[#F5E6D3]">
+      <section className="py-16 bg-gradient-to-b from-white to-[#F5E6D3] dark:from-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] bg-clip-text text-transparent">
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#2C1810] to-[#B45F3A] bg-clip-text text-transparent dark:from-[#B45F3A] dark:to-[#D4A574]">
               Botswana Land Allocation Analytics
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Visual insights into waiting lists, application volumes, demographics, and settlement performance
             </p>
           </div>
           
-          {/* Row 1: Land Board Waiting List Severity - Standalone (full width) */}
+          {/* Row 1: Land Board Waiting List Severity */}
           <div className="mb-12">
             <WaitingListSeverity />
           </div>
