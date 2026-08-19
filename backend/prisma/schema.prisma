@@ -79,6 +79,10 @@ model Application {
   userId            String            @map("user_id")
   purpose           String?
   applicationNumber String            @unique @map("application_number")
+  paymentStatus    String?   @map("payment_status")
+  paymentDate      DateTime? @map("payment_date")
+  paymentIntentId  String?   @map("payment_intent_id")
+  
   approver          User?             @relation("ApprovedBy", fields: [approvedBy], references: [userId])
   landBoard         LandBoard         @relation(fields: [landBoardId], references: [landBoardId])
   reviewer          User?             @relation("ReviewedBy", fields: [reviewedBy], references: [userId])

@@ -15,6 +15,7 @@ router.put('/applications/:id/status', managerController.updateApplicationStatus
 
 // Performance
 router.get('/performance', managerController.getRegionPerformance);
+router.get('/staff-performance', managerController.getStaffPerformance);
 
 // Audit Logs for Manager's Region
 router.get('/audit-logs', managerController.getRegionAuditLogs);

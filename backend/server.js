@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/admin.routes');
 const managerRoutes = require('./routes/manager.routes');
 const queueRoutes = require('./routes/queue.routes');
 const tempDocumentRoutes = require('./routes/tempDocument.routes');
+const paymentRoutes = require('./routes/payment.routes');
 
 dotenv.config();
 
@@ -107,6 +108,7 @@ app.use('/api/manager', managerRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/temp-documents', tempDocumentRoutes);
 app.use('/temp', express.static(path.join(__dirname, 'uploads/temp')));
+app.use('/api/payments', paymentRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.4.0",
+    "@stripe/react-stripe-js": "^6.8.0",
+    "@stripe/stripe-js": "^9.13.0",
     "axios": "^1.6.7",
     "d3-scale": "^4.0.2",
     "date-fns": "^3.3.1",

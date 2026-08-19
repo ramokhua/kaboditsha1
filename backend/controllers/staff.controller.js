@@ -500,10 +500,106 @@ const rebalanceQueuePositions = async (req, res) => {
   }
 };
 
+// Get staff performance metrics for manager
+const getStaffPerformance = async (req, res) => {
+  try {
+    const manager = await prisma.user.findUnique({
+      where: { userId: req.user.userId },
+      include: { assignedBoard: true }
+    });
+
+    if (!manager?.assignedBoard) {
+      return res.status(400).json({ error: 'Manager not assigned to any land board' });
+    }
+
+    // Get region
+    let region = manager.assignedBoard.region;
+    if (manager.assignedBoard.type === 'SUBORDINATE' && manager.assignedBoard.parentBoardId) {
+      const mainBoard = await prisma.landBoard.findUnique({
+        where: { landBoardId: manager.assignedBoard.parentBoardId }
+      });
+      if (mainBoard) region = mainBoard.region;
+    }
+
+    // Get all staff in the region
+    const staffUsers = await prisma.user.findMany({
+      where: {
+        role: 'STAFF',
+        landBoard: { region: region }
+      },
+      include: {
+        assignedBoard: true,
+        applicationsReviewed: {
+          where: {
+            status: { in: ['APPROVED', 'REJECTED', 'WITHDRAWN'] }
+          }
+        },
+        documentsVerified: true
+      }
+    });
+
+    const performanceData = staffUsers.map(staff => {
+      const reviewedApps = staff.applicationsReviewed;
+      const totalReviewed = reviewedApps.length;
+      const approved = reviewedApps.filter(a => a.status === 'APPROVED').length;
+      const rejected = reviewedApps.filter(a => a.status === 'REJECTED').length;
+      
+      // Calculate average processing time (in days)
+      let avgProcessingDays = 0;
+      if (totalReviewed > 0) {
+        const totalDays = reviewedApps.reduce((sum, app) => {
+          if (app.reviewedAt && app.submittedAt) {
+            const days = (new Date(app.reviewedAt) - new Date(app.submittedAt)) / (1000 * 60 * 60 * 24);
+            return sum + days;
+          }
+          return sum;
+        }, 0);
+        avgProcessingDays = Math.round(totalDays / totalReviewed);
+      }
+
+      return {
+        userId: staff.userId,
+        fullName: staff.fullName,
+        email: staff.email,
+        board: staff.assignedBoard?.name || 'Unknown',
+        totalReviewed,
+        approved,
+        rejected,
+        approvalRate: totalReviewed > 0 ? Math.round((approved / totalReviewed) * 100) : 0,
+        avgProcessingDays,
+        documentsVerified: staff.documentsVerified.length,
+        activeApplications: reviewedApps.filter(a => a.status === 'UNDER_REVIEW').length
+      };
+    });
+
+    // Sort by total reviewed (highest first)
+    performanceData.sort((a, b) => b.totalReviewed - a.totalReviewed);
+
+    // Add region summary
+    const summary = {
+      region,
+      totalStaff: performanceData.length,
+      totalReviewed: performanceData.reduce((sum, s) => sum + s.totalReviewed, 0),
+      avgApprovalRate: performanceData.length > 0 
+        ? Math.round(performanceData.reduce((sum, s) => sum + s.approvalRate, 0) / performanceData.length)
+        : 0,
+      avgProcessingDays: performanceData.length > 0
+        ? Math.round(performanceData.reduce((sum, s) => sum + s.avgProcessingDays, 0) / performanceData.length)
+        : 0
+    };
+
+    res.json({ summary, staff: performanceData });
+  } catch (error) {
+    console.error('Error fetching staff performance:', error);
+    res.status(500).json({ error: 'Failed to fetch staff performance data' });
+  }
+};
+
 module.exports = {
   getStats,
   getBoardApplications,
   getApplicationDetails,
+  getStaffPerformance,
   updateApplicationStatus,
   verifyDocument,
   addNote,
