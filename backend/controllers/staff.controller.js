@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { sendEmail } = require('../services/email.service');
 const { createAuditLog } = require('./admin.controller');
+const { rebalanceQueuePositions: rebalancePerStatus } = require('./application.controller');
 
 // Get staff dashboard statistics
 const getStats = async (req, res) => {
@@ -260,6 +261,14 @@ const updateApplicationStatus = async (req, res) => {
       }
     }
 
+    // Rebalance both the OLD and NEW status queues (since the app moved between them)
+    try {
+      await rebalancePerStatus(application.landBoardId, application.settlementType);
+      console.log(`✅ Rebalanced queues after status change (${oldStatus} → ${status})`);
+    } catch (rebalanceError) {
+      console.error('Rebalance failed:', rebalanceError);
+    }
+
     res.json(updated);
   } catch (error) {
     console.error('Error updating application status:', error);
@@ -383,6 +392,14 @@ const verifyDocument = async (req, res) => {
         `Auto-updated application ${document.application.applicationNumber} status to ${newStatus}`,
         req.ip
       );
+
+      // Rebalance queues after the auto status change
+      try {
+        await rebalancePerStatus(document.application.landBoardId, document.application.settlementType);
+        console.log(`✅ Rebalanced queues after doc verification (→ ${newStatus})`);
+      } catch (rebalanceError) {
+        console.error('Rebalance failed:', rebalanceError);
+      }
       
       try {
         await sendEmail(
@@ -450,7 +467,7 @@ const addNote = async (req, res) => {
   }
 };
 
-// Rebalance queue positions for staff's land board
+// Rebalance queue positions for staff's land board (per status)
 const rebalanceQueuePositions = async (req, res) => {
   try {
     const staff = await prisma.user.findUnique({
@@ -466,22 +483,8 @@ const rebalanceQueuePositions = async (req, res) => {
     let totalUpdated = 0;
 
     for (const settlementType of settlementTypes) {
-      const activeApps = await prisma.application.findMany({
-        where: {
-          landBoardId: staff.landBoardId,
-          settlementType,
-          status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'] }
-        },
-        orderBy: { submittedAt: 'asc' }
-      });
-
-      for (let i = 0; i < activeApps.length; i++) {
-        await prisma.application.update({
-          where: { applicationId: activeApps[i].applicationId },
-          data: { queuePosition: i + 1 }
-        });
-        totalUpdated++;
-      }
+      const count = await rebalancePerStatus(staff.landBoardId, settlementType);
+      totalUpdated += count;
     }
 
     await createAuditLog(
@@ -512,7 +515,6 @@ const getStaffPerformance = async (req, res) => {
       return res.status(400).json({ error: 'Manager not assigned to any land board' });
     }
 
-    // Get region
     let region = manager.assignedBoard.region;
     if (manager.assignedBoard.type === 'SUBORDINATE' && manager.assignedBoard.parentBoardId) {
       const mainBoard = await prisma.landBoard.findUnique({
@@ -521,7 +523,6 @@ const getStaffPerformance = async (req, res) => {
       if (mainBoard) region = mainBoard.region;
     }
 
-    // Get all staff in the region
     const staffUsers = await prisma.user.findMany({
       where: {
         role: 'STAFF',
@@ -530,9 +531,7 @@ const getStaffPerformance = async (req, res) => {
       include: {
         assignedBoard: true,
         applicationsReviewed: {
-          where: {
-            status: { in: ['APPROVED', 'REJECTED', 'WITHDRAWN'] }
-          }
+          where: { status: { in: ['APPROVED', 'REJECTED', 'WITHDRAWN'] } }
         },
         documentsVerified: true
       }
@@ -544,7 +543,6 @@ const getStaffPerformance = async (req, res) => {
       const approved = reviewedApps.filter(a => a.status === 'APPROVED').length;
       const rejected = reviewedApps.filter(a => a.status === 'REJECTED').length;
       
-      // Calculate average processing time (in days)
       let avgProcessingDays = 0;
       if (totalReviewed > 0) {
         const totalDays = reviewedApps.reduce((sum, app) => {
@@ -572,10 +570,8 @@ const getStaffPerformance = async (req, res) => {
       };
     });
 
-    // Sort by total reviewed (highest first)
     performanceData.sort((a, b) => b.totalReviewed - a.totalReviewed);
 
-    // Add region summary
     const summary = {
       region,
       totalStaff: performanceData.length,
@@ -611,7 +607,6 @@ const getQueueSummaryBySettlement = async (req, res) => {
     const summary = {};
 
     for (const settlementType of settlementTypes) {
-      // Total active applications in this queue
       const total = await prisma.application.count({
         where: {
           landBoardId: staff.landBoardId,
@@ -620,7 +615,6 @@ const getQueueSummaryBySettlement = async (req, res) => {
         }
       });
 
-      // Breakdown by status
       const pending = await prisma.application.count({
         where: { landBoardId: staff.landBoardId, settlementType, status: 'SUBMITTED' }
       });
@@ -631,7 +625,6 @@ const getQueueSummaryBySettlement = async (req, res) => {
         where: { landBoardId: staff.landBoardId, settlementType, status: 'DOCUMENTS_VERIFIED' }
       });
 
-      // Oldest application in active pool
       const oldest = await prisma.application.findFirst({
         where: {
           landBoardId: staff.landBoardId,
@@ -646,7 +639,6 @@ const getQueueSummaryBySettlement = async (req, res) => {
         ? Math.round((new Date() - new Date(oldest.submittedAt)) / (1000 * 60 * 60 * 24 * 30))
         : 0;
 
-      // Average wait (based on approved applications historical)
       const approvedApps = await prisma.application.findMany({
         where: {
           landBoardId: staff.landBoardId,

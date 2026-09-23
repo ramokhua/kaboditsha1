@@ -238,27 +238,40 @@ const updateStatus = async (req, res) => {
   }
 };
 
-// Recalculate queue positions for a specific board and settlement type
+// Recalculate queue positions PER STATUS for a given board + settlement type
 const rebalanceQueuePositions = async (landBoardId, settlementType) => {
   try {
-    const activeApps = await prisma.application.findMany({
-      where: {
-        landBoardId,
-        settlementType,
-        status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'] }
-      },
-      orderBy: { submittedAt: 'asc' }
-    });
+    const statuses = ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'];
+    let totalRebalanced = 0;
 
-    for (let i = 0; i < activeApps.length; i++) {
-      await prisma.application.update({
-        where: { applicationId: activeApps[i].applicationId },
-        data: { queuePosition: i + 1 }
+    for (const status of statuses) {
+      const apps = await prisma.application.findMany({
+        where: {
+          landBoardId,
+          settlementType,
+          status
+        },
+        orderBy: { submittedAt: 'asc' },
+        select: { applicationId: true }
       });
+
+      if (apps.length === 0) continue;
+
+      // Batch update using transaction
+      await prisma.$transaction(
+        apps.map((app, index) =>
+          prisma.application.update({
+            where: { applicationId: app.applicationId },
+            data: { queuePosition: index + 1 }
+          })
+        )
+      );
+
+      totalRebalanced += apps.length;
     }
 
-    console.log(`Rebalanced ${activeApps.length} positions for ${landBoardId} - ${settlementType}`);
-    return activeApps.length;
+    console.log(`✅ Rebalanced ${totalRebalanced} positions (per status) for ${landBoardId} - ${settlementType}`);
+    return totalRebalanced;
   } catch (error) {
     console.error('Error rebalancing queue positions:', error);
     throw error;

@@ -13,7 +13,7 @@ const SETTLEMENT_LABELS = {
 };
 
 const StaffApplicationsPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const settlementFilter = searchParams.get('settlement') || 'ALL';
   
   const [applications, setApplications] = useState([]);
@@ -28,7 +28,7 @@ const StaffApplicationsPage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [applications, activeStatus, searchTerm]);
+  }, [applications, activeStatus, searchTerm, settlementFilter]);
 
   const fetchApplications = async () => {
     try {
@@ -60,18 +60,23 @@ const StaffApplicationsPage = () => {
       const lower = searchTerm.toLowerCase();
       filtered = filtered.filter(app =>
         app.user?.fullName?.toLowerCase().includes(lower) ||
-        app.applicationNumber?.toLowerCase().includes(lower)
+        app.applicationNumber?.toLowerCase().includes(lower) ||
+        String(app.user?.omangNumber || '').includes(lower)
       );
     }
 
-    // Sort by queue position (ascending) for active apps, then by submittedAt
+    // Sort: FIFO for active statuses, newest first for completed
     filtered.sort((a, b) => {
       const aActive = ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'].includes(a.status);
       const bActive = ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'].includes(b.status);
+
       if (aActive && bActive) {
-        return (a.queuePosition || 999) - (b.queuePosition || 999);
+        return new Date(a.submittedAt) - new Date(b.submittedAt);
       }
-      return new Date(b.submittedAt) - new Date(a.submittedAt);
+      if (!aActive && !bActive) {
+        return new Date(b.submittedAt) - new Date(a.submittedAt);
+      }
+      return aActive ? -1 : 1;
     });
 
     setFilteredApps(filtered);
@@ -88,11 +93,12 @@ const StaffApplicationsPage = () => {
   ];
 
   const getStatusCount = (status) => {
-    if (status === 'ALL') return filteredApps.length;
-    return applications.filter(app => {
-      const matchesSettlement = settlementFilter === 'ALL' || app.settlementType === settlementFilter;
-      return matchesSettlement && app.status === status;
-    }).length;
+    let base = applications;
+    if (settlementFilter !== 'ALL') {
+      base = base.filter(app => app.settlementType === settlementFilter);
+    }
+    if (status === 'ALL') return base.length;
+    return base.filter(app => app.status === status).length;
   };
 
   const getStatusBadge = (status) => {
@@ -108,6 +114,8 @@ const StaffApplicationsPage = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const showQueuePosition = activeStatus !== 'ALL';
+
   if (loading) return <LoadingSpinner text="Loading applications..." />;
 
   const pageTitle = settlementFilter === 'ALL' 
@@ -116,7 +124,7 @@ const StaffApplicationsPage = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#F5E6D3] dark:bg-gray-900 py-8">
+      <div className="min-h-screen bg-[#F5E6D3] dark:bg-gray-900 py-8 transition-colors duration-200">
         <div className="container mx-auto px-4">
           {/* Back link */}
           <Link
@@ -146,7 +154,7 @@ const StaffApplicationsPage = () => {
                   onClick={() => setActiveStatus(tab.key)}
                   className={`py-2 px-3 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
                     activeStatus === tab.key
-                      ? 'bg-[#2C1810] text-white'
+                      ? 'bg-[#2C1810] dark:bg-[#B45F3A] text-white'
                       : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -159,7 +167,7 @@ const StaffApplicationsPage = () => {
             <div className="py-4">
               <SearchBar
                 onSearch={setSearchTerm}
-                placeholder="Search by name, reference..."
+                placeholder="Search by name, reference, or Omang..."
                 initialValue={searchTerm}
               />
             </div>
@@ -170,7 +178,11 @@ const StaffApplicationsPage = () => {
             <table className="w-full min-w-[800px]">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Queue Pos</th>
+                  {showQueuePosition && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Queue Pos
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reference</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Applicant</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
@@ -181,20 +193,22 @@ const StaffApplicationsPage = () => {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredApps.slice(0, 100).map(app => (
                   <tr key={app.applicationId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'].includes(app.status) && app.queuePosition ? (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          app.queuePosition <= 10 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 font-bold' :
-                          app.queuePosition <= 50 ? 'bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-300' :
-                          app.queuePosition <= 200 ? 'bg-yellow-50 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' :
-                          'bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300'
-                        }`}>
-                          #{app.queuePosition}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs">—</span>
-                      )}
-                    </td>
+                    {showQueuePosition && (
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'].includes(app.status) && app.queuePosition ? (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            app.queuePosition <= 10 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 font-bold' :
+                            app.queuePosition <= 50 ? 'bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-300' :
+                            app.queuePosition <= 200 ? 'bg-yellow-50 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' :
+                            'bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                          }`}>
+                            #{app.queuePosition}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {app.applicationNumber}
                     </td>
