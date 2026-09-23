@@ -595,6 +595,98 @@ const getStaffPerformance = async (req, res) => {
   }
 };
 
+// Get queue summary grouped by settlement type
+const getQueueSummaryBySettlement = async (req, res) => {
+  try {
+    const staff = await prisma.user.findUnique({
+      where: { userId: req.user.userId },
+      select: { landBoardId: true, assignedBoard: true }
+    });
+
+    if (!staff.landBoardId) {
+      return res.status(400).json({ error: 'Staff not assigned to any land board' });
+    }
+
+    const settlementTypes = ['TOWN', 'VILLAGE', 'FARM'];
+    const summary = {};
+
+    for (const settlementType of settlementTypes) {
+      // Total active applications in this queue
+      const total = await prisma.application.count({
+        where: {
+          landBoardId: staff.landBoardId,
+          settlementType,
+          status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'] }
+        }
+      });
+
+      // Breakdown by status
+      const pending = await prisma.application.count({
+        where: { landBoardId: staff.landBoardId, settlementType, status: 'SUBMITTED' }
+      });
+      const underReview = await prisma.application.count({
+        where: { landBoardId: staff.landBoardId, settlementType, status: 'UNDER_REVIEW' }
+      });
+      const verified = await prisma.application.count({
+        where: { landBoardId: staff.landBoardId, settlementType, status: 'DOCUMENTS_VERIFIED' }
+      });
+
+      // Oldest application in active pool
+      const oldest = await prisma.application.findFirst({
+        where: {
+          landBoardId: staff.landBoardId,
+          settlementType,
+          status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_VERIFIED'] }
+        },
+        orderBy: { submittedAt: 'asc' },
+        select: { submittedAt: true }
+      });
+
+      const oldestMonths = oldest
+        ? Math.round((new Date() - new Date(oldest.submittedAt)) / (1000 * 60 * 60 * 24 * 30))
+        : 0;
+
+      // Average wait (based on approved applications historical)
+      const approvedApps = await prisma.application.findMany({
+        where: {
+          landBoardId: staff.landBoardId,
+          settlementType,
+          status: 'APPROVED',
+          approvedAt: { not: null }
+        },
+        select: { submittedAt: true, approvedAt: true }
+      });
+
+      const avgWait = approvedApps.length > 0
+        ? Math.round(
+            approvedApps.reduce((sum, app) => {
+              const days = (new Date(app.approvedAt) - new Date(app.submittedAt)) / (1000 * 60 * 60 * 24);
+              return sum + days;
+            }, 0) / approvedApps.length / 30
+          )
+        : 0;
+
+      summary[settlementType] = {
+        total,
+        pending,
+        underReview,
+        verified,
+        oldestMonths,
+        avgWaitMonths: avgWait
+      };
+    }
+
+    res.json({
+      boardName: staff.assignedBoard?.name || 'Unknown Board',
+      settlementTypes: summary,
+      grandTotal: Object.values(summary).reduce((sum, s) => sum + s.total, 0)
+    });
+  } catch (error) {
+    console.error('Error fetching queue summary:', error);
+    res.status(500).json({ error: 'Failed to fetch queue summary' });
+  }
+};
+
 module.exports = {
   getStats,
   getBoardApplications,
@@ -603,5 +695,6 @@ module.exports = {
   updateApplicationStatus,
   verifyDocument,
   addNote,
-  rebalanceQueuePositions
+  rebalanceQueuePositions,
+  getQueueSummaryBySettlement
 };

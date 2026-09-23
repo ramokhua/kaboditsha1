@@ -5,6 +5,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import SearchBar from '../common/SearchBar';
 import { useNotifications } from '../../context/NotificationContext';
 import * as XLSX from 'xlsx';
+import SettlementQueueCards from './SettlementQueueCards';
 
 const StaffDashboard = () => {
   const { addNotification } = useNotifications();
@@ -15,6 +16,7 @@ const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [settlementFilter, setSettlementFilter] = useState('');
+  const [queueSummary, setQueueSummary] = useState(null);
   
   // Bulk update states
   const [selectedApps, setSelectedApps] = useState([]);
@@ -33,13 +35,15 @@ const StaffDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [appsRes, statsRes] = await Promise.all([
+      const [appsRes, statsRes, summaryRes] = await Promise.all([
         api.get('/staff/applications'),
-        api.get('/staff/stats')
+        api.get('/staff/stats'),
+        api.get('/staff/queue-summary')
       ]);
       setApplications(appsRes.data);
       setFilteredApps(appsRes.data);
       setStats(statsRes.data);
+      setQueueSummary(summaryRes.data);
     } catch (error) {
       console.error('Error fetching staff data:', error);
       addNotification('error', 'Failed to load applications');
@@ -233,201 +237,8 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        {/* Filters and Bulk Actions */}
-        <div className="bg-white rounded-t-xl shadow-lg pt-4 px-6">
-          <div className="flex flex-wrap justify-between items-center gap-2 border-b border-gray-200 pb-4">
-            <div className="flex space-x-8 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'all'
-                    ? 'border-[#B45F3A] text-[#B45F3A]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                All ({stats.total || 0})
-              </button>
-              <button
-                onClick={() => setActiveTab('pending')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'pending'
-                    ? 'border-[#B45F3A] text-[#B45F3A]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Pending ({stats.pending || 0})
-              </button>
-              <button
-                onClick={() => setActiveTab('underReview')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'underReview'
-                    ? 'border-[#B45F3A] text-[#B45F3A]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Under Review ({stats.underReview || 0})
-              </button>
-              <button
-                onClick={() => setActiveTab('verified')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'verified'
-                    ? 'border-[#B45F3A] text-[#B45F3A]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Verified ({stats.verified || 0})
-              </button>
-              <button
-                onClick={() => setActiveTab('approved')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'approved'
-                    ? 'border-[#B45F3A] text-[#B45F3A]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Approved ({stats.approved || 0})
-              </button>
-              <button
-                onClick={() => setActiveTab('rejected')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === 'rejected'
-                    ? 'border-[#B45F3A] text-[#B45F3A]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Rejected ({stats.rejected || 0})
-              </button>
-            </div>
-            <button
-              onClick={() => setActiveTab('withdrawn')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === 'withdrawn'
-                  ? 'border-[#B45F3A] text-[#B45F3A]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Withdrawn ({stats.withdrawn || 0})
-            </button>
-
-            {/* Bulk Update Button */}
-            {selectedApps.length > 0 && (
-              <button
-                onClick={() => setShowBulkModal(true)}
-                className="px-4 py-2 bg-[#2C1810] text-white rounded-lg hover:bg-[#3d2418] transition-colors flex items-center gap-2"
-              >
-                📋 Bulk Update ({selectedApps.length})
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-4 py-4">
-            <div className="flex-1 min-w-[200px]">
-              <SearchBar
-                onSearch={setSearchTerm}
-                placeholder="Search by name, ref, or board..."
-                initialValue={searchTerm}
-              />
-            </div>
-            <select
-              value={settlementFilter}
-              onChange={(e) => setSettlementFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B45F3A]"
-            >
-              <option value="">All Types</option>
-              {settlementTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Applications Table */}
-        <div className="bg-white rounded-b-xl shadow-lg p-6 overflow-x-auto">
-          <table className="w-full min-w-[800px]">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedApps.length === filteredApps.length && filteredApps.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-gray-300 text-[#B45F3A] focus:ring-[#B45F3A]"
-                  />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applicant</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Land Board</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Queue Pos</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredApps.map((app) => {
-                const queueStyle = getQueuePositionStyle(app.queuePosition, app.status);
-                return (
-                  <tr key={app.applicationId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      {app.status !== 'APPROVED' && app.status !== 'REJECTED' && app.status !== 'WITHDRAWN' && (
-                        <input
-                          type="checkbox"
-                          checked={selectedApps.includes(app.applicationId)}
-                          onChange={() => toggleSelectApp(app.applicationId)}
-                          className="w-4 h-4 rounded border-gray-300 text-[#B45F3A] focus:ring-[#B45F3A]"
-                        />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {app.applicationNumber}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {app.user?.fullName}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {app.landBoard?.name}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {app.settlementType}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {queueStyle.display ? (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${queueStyle.className}`}>
-                          {queueStyle.text}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs">{queueStyle.text}</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-1 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(app.status)}`}>
-                        {app.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(app.submittedAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <Link
-                        to={`/staff/review/${app.applicationId}`}
-                        className="text-[#B45F3A] hover:text-[#2C1810] font-medium"
-                      >
-                        Review
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          
-          {filteredApps.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No applications found</p>
-            </div>
-          )}
-        </div>
+        {/* Settlement Queue Cards */}
+        {queueSummary && <SettlementQueueCards summary={queueSummary} />}
       </div>
 
       {/* Bulk Update Modal */}

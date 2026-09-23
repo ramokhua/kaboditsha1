@@ -15,6 +15,7 @@ router.get('/applications', staffController.getBoardApplications);
 
 // Get single application details for review
 router.get('/applications/:id', staffController.getApplicationDetails);
+router.get('/queue-summary', staffController.getQueueSummaryBySettlement);
 
 // Update application status
 router.put('/applications/:id/status', staffController.updateApplicationStatus);

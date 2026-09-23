@@ -12,7 +12,6 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
-// Replace ApplyPage with ApplicationForm
 import ApplicationForm from './components/application/ApplicationForm';
 import ProfilePage from './pages/ProfilePage';
 import ApplicationsPage from './pages/ApplicationsPage';
@@ -29,6 +28,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import LandBoardDirectoryPage from './pages/LandBoardDirectoryPage';
+import StaffApplicationsPage from './pages/StaffApplicationsPage';
 
 function App() {
   return (
@@ -92,6 +92,14 @@ function App() {
                 <AuthGuard>
                   <RoleGuard allowedRoles={['STAFF', 'MANAGER', 'ADMIN']}>
                     <StaffReviewPage />
+                  </RoleGuard>
+                </AuthGuard>
+              } />
+
+              <Route path="/staff/applications" element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={['STAFF', 'MANAGER', 'ADMIN']}>
+                    <StaffApplicationsPage />
                   </RoleGuard>
                 </AuthGuard>
               } />
