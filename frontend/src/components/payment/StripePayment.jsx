@@ -40,11 +40,13 @@ const PaymentForm = ({ applicationId, amount = 50, onSuccess }) => {
       }
 
       if (paymentIntent.status === 'succeeded') {
-        await api.post('/payments/confirm-payment', {
+        const confirmRes = await api.post('/payments/confirm-payment', {
           applicationId,
           paymentIntentId: paymentIntent.id
         });
-        onSuccess();
+        
+        // Pass the full response (application + receipt)
+        onSuccess(confirmRes.data);
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Payment failed');
@@ -54,20 +56,16 @@ const PaymentForm = ({ applicationId, amount = 50, onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 border rounded-lg">
+      <div className="p-4 border rounded-lg bg-white">
         <CardElement
           options={{
             style: {
               base: {
                 fontSize: '16px',
                 color: '#424770',
-                '::placeholder': {
-                  color: '#aab7c4',
-                },
+                '::placeholder': { color: '#aab7c4' },
               },
-              invalid: {
-                color: '#9e2146',
-              },
+              invalid: { color: '#9e2146' },
             },
           }}
         />
@@ -76,7 +74,7 @@ const PaymentForm = ({ applicationId, amount = 50, onSuccess }) => {
       <button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full bg-[#2C1810] text-white px-6 py-3 rounded-lg hover:bg-[#3A241C] transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-[#2C1810] text-white px-6 py-3 rounded-lg hover:bg-[#3A241C] transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Processing...' : `Pay P${amount}`}
       </button>

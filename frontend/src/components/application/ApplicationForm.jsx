@@ -7,7 +7,7 @@ import PersonalInfoStep from './PersonalInfoStep';
 import LandSelectionStep from './LandSelectionStep';
 import DocumentUpload from './DocumentUpload';
 import ReviewStep from './ReviewStep';
-import SuccessModal from './SuccessModal';
+import PaymentReceiptModal from '../payment/PaymentReceiptModal';
 import StripePayment from '../payment/StripePayment';
 
 const REQUIRED_DOCUMENTS = ['omang'];
@@ -25,11 +25,11 @@ const ApplicationForm = () => {
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [uploadedDocTypes, setUploadedDocTypes] = useState(new Set());
   const [tempDocIds, setTempDocIds] = useState([]);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receipt, setReceipt] = useState(null);
   const [submittedApplicationNumber, setSubmittedApplicationNumber] = useState(null);
   const [applicationId, setApplicationId] = useState(null);
   const [draftId, setDraftId] = useState(null);
-  const [paymentComplete, setPaymentComplete] = useState(false);
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
@@ -79,13 +79,15 @@ const ApplicationForm = () => {
 
       if (draftId) {
         await api.put(`/applications/draft/${draftId}`, draftData);
+        return draftId;
       } else {
         const response = await api.post('/applications/draft', draftData);
         setDraftId(response.data.applicationId);
+        return response.data.applicationId;
       }
-      console.log('Draft saved to backend at:', new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Failed to save draft:', error);
+      return null;
     }
   };
 
@@ -213,7 +215,8 @@ const ApplicationForm = () => {
     addNotification('success', 'Document uploaded successfully');
   };
 
-  const handleFinalSubmit = async () => {
+  // This now just moves to payment step — does NOT create application yet
+  const handleProceedToPayment = async () => {
     const missingRequired = REQUIRED_DOCUMENTS.filter(
       docType => !uploadedDocTypes.has(docType)
     );
@@ -228,43 +231,30 @@ const ApplicationForm = () => {
       return;
     }
 
+    // Save the draft first so it exists in DB with an ID
     setSubmitting(true);
-    try {
-      const createResponse = await api.post('/applications', {
-        landBoardId: formData.landBoardId,
-        settlementType: formData.settlementType,
-        purpose: formData.purpose,
-        tempDocIds: tempDocIds
-      });
-      
-      const newApplicationNumber = createResponse.data.applicationNumber;
-      const newApplicationId = createResponse.data.applicationId;
-      setSubmittedApplicationNumber(newApplicationNumber);
-      setApplicationId(newApplicationId);
-      
-      // Clear the draft since application is now created
-      await clearDraft();
-      
-      // Move to payment step
-      setCurrentStep(5);
-      
-    } catch (error) {
-      console.error('Error submitting application:', error);
-      addNotification('error', error.response?.data?.error || 'Failed to submit application');
-    } finally {
-      setSubmitting(false);
+    const savedDraftId = await saveDraftToBackend();
+    setSubmitting(false);
+
+    if (!savedDraftId) {
+      addNotification('error', 'Could not save your application. Please try again.');
+      return;
     }
+
+    setCurrentStep(5);
   };
 
-  const handlePaymentSuccess = () => {
-    setPaymentComplete(true);
+  // Called when Stripe payment succeeds
+  const handlePaymentSuccess = (confirmData) => {
+    const receiptData = confirmData.receipt;
+    const appData = confirmData.application;
+
+    setReceipt(receiptData);
+    setApplicationId(appData.applicationId);
+    setSubmittedApplicationNumber(appData.applicationNumber);
+    setDraftId(null); // no longer a draft
+    setShowReceiptModal(true);
     addNotification('success', 'Payment successful! Application submitted.');
-    setShowSuccessModal(true);
-  };
-
-  const handlePaymentSkip = () => {
-    addNotification('info', 'Payment skipped for demo purposes');
-    setShowSuccessModal(true);
   };
 
   const saveDraftManually = async () => {
@@ -289,9 +279,9 @@ const ApplicationForm = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F5E6D3] to-white py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#F5E6D3] to-white dark:from-gray-900 dark:to-gray-800 py-12 px-4">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-[#2C1810] to-[#B45F3A] p-6">
             <h1 className="text-2xl font-bold text-white">Apply for Land</h1>
             <p className="text-white/80 mt-1">Complete the steps below to submit your application</p>
@@ -342,7 +332,7 @@ const ApplicationForm = () => {
               <ReviewStep
                 formData={formData}
                 uploadedDocs={uploadedDocs}
-                onSubmit={handleFinalSubmit}
+                onSubmit={handleProceedToPayment}
                 onBack={() => setCurrentStep(3)}
                 submitting={submitting}
               />
@@ -350,48 +340,46 @@ const ApplicationForm = () => {
 
             {currentStep === 5 && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-[#2C1810]">Pay Application Fee</h2>
-                <p className="text-gray-600">
-                  A non-refundable application fee of <strong>P50.00</strong> is required to complete your application.
+                <h2 className="text-xl font-bold text-[#2C1810] dark:text-white">Pay Application Fee</h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  A non-refundable application fee of <strong>P50.00</strong> is required to submit your application.
                 </p>
                 
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
                     💳 Your payment is securely processed by Stripe. Your card details are never stored on our servers.
                   </p>
                 </div>
 
-                <StripePayment
-                  applicationId={applicationId}
-                  amount={50}
-                  onSuccess={handlePaymentSuccess}
-                />
-
-                <div className="text-center">
-                  <button
-                    onClick={handlePaymentSkip}
-                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    Skip payment (demo mode)
-                  </button>
-                </div>
+                {draftId ? (
+                  <StripePayment
+                    applicationId={draftId}
+                    amount={50}
+                    onSuccess={handlePaymentSuccess}
+                  />
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="spinner mx-auto"></div>
+                    <p className="text-gray-500 mt-3">Preparing payment...</p>
+                  </div>
+                )}
 
                 <button
                   onClick={() => setCurrentStep(4)}
-                  className="text-sm text-[#B45F3A] hover:text-[#2C1810] transition-colors"
+                  className="text-sm text-[#B45F3A] hover:text-[#2C1810] dark:hover:text-[#D4A574] transition-colors"
                 >
                   ← Back to Review
                 </button>
               </div>
             )}
 
-            {/* Navigation Buttons - Only show when not on step 4 (Review) or step 5 (Payment) */}
+            {/* Navigation Buttons - Only for steps 1-3 */}
             {currentStep < 4 && (
-              <div className="flex justify-between mt-8 pt-6 border-t">
+              <div className="flex justify-between mt-8 pt-6 border-t dark:border-gray-700">
                 {currentStep > 1 && (
                   <button
                     onClick={handleBack}
-                    className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     Back
                   </button>
@@ -406,26 +394,24 @@ const ApplicationForm = () => {
                   </button>
                 )}
                 
-                {currentStep < 4 && (
-                  <button
-                    onClick={() => {
-                      if (currentStep === 1 && !validateStep(1)) return;
-                      if (currentStep === 2 && !validateStep(2)) return;
-                      if (currentStep === 3) {
-                        if (!hasRequiredDocuments()) {
-                          addNotification('error', 'Please upload your certified Omang copy');
-                          return;
-                        }
-                        setCurrentStep(4);
-                      } else {
-                        handleNext();
+                <button
+                  onClick={() => {
+                    if (currentStep === 1 && !validateStep(1)) return;
+                    if (currentStep === 2 && !validateStep(2)) return;
+                    if (currentStep === 3) {
+                      if (!hasRequiredDocuments()) {
+                        addNotification('error', 'Please upload your certified Omang copy');
+                        return;
                       }
-                    }}
-                    className="ml-auto px-6 py-2 bg-[#2C1810] text-white rounded-lg hover:bg-[#3d2418] transition-colors"
-                  >
-                    {currentStep === 3 ? 'Review →' : 'Next →'}
-                  </button>
-                )}
+                      setCurrentStep(4);
+                    } else {
+                      handleNext();
+                    }
+                  }}
+                  className="ml-auto px-6 py-2 bg-[#2C1810] text-white rounded-lg hover:bg-[#3d2418] transition-colors"
+                >
+                  {currentStep === 3 ? 'Review →' : 'Next →'}
+                </button>
               </div>
             )}
 
@@ -443,13 +429,14 @@ const ApplicationForm = () => {
         </div>
       </div>
 
-      <SuccessModal
-        isOpen={showSuccessModal}
-        onClose={() => {
-          setShowSuccessModal(false);
+      <PaymentReceiptModal
+        isOpen={showReceiptModal}
+        receipt={receipt}
+        onClose={() => setShowReceiptModal(false)}
+        onGoToDashboard={() => {
+          setShowReceiptModal(false);
           navigate('/applications');
         }}
-        applicationNumber={submittedApplicationNumber}
       />
     </div>
   );

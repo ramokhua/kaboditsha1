@@ -58,6 +58,44 @@ const createApplication = async (req, res) => {
       });
     }
 
+    // CHECK FOR EXISTING DRAFT FIRST
+    const existingDraft = await prisma.application.findFirst({
+      where: {
+        userId,
+        status: 'DRAFT'
+      }
+    });
+
+    if (existingDraft) {
+      const updated = await prisma.application.update({
+        where: { applicationId: existingDraft.applicationId },
+        data: {
+          landBoardId,
+          settlementType,
+          purpose,
+          status: 'SUBMITTED',
+          updatedAt: new Date()
+        }
+      });
+
+      if (tempDocIds && tempDocIds.length > 0) {
+        for (const tempId of tempDocIds) {
+          await moveTempToApplication(tempId, updated.applicationId);
+        }
+      }
+
+      await rebalanceQueuePositions(landBoardId, settlementType);
+
+      const user = await prisma.user.findUnique({ where: { userId } });
+      try {
+        await sendEmail(user.email, 'applicationSubmitted', { user, application: updated });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+      }
+
+      return res.status(201).json(updated);
+    }
+
     // Generate application number
     const year = new Date().getFullYear();
     const count = await prisma.application.count();
@@ -86,10 +124,7 @@ const createApplication = async (req, res) => {
       },
       include: {
         landBoard: {
-          select: {
-            name: true,
-            region: true
-          }
+          select: { name: true, region: true }
         }
       }
     });
@@ -101,18 +136,11 @@ const createApplication = async (req, res) => {
       }
     }
 
-    // Rebalance queue positions
     await rebalanceQueuePositions(landBoardId, settlementType);
 
-    // Get user details for email notification
-    const user = await prisma.user.findUnique({
-      where: { userId }
-    });
-    
-    console.log('Sending email to:', user.email);
+    const user = await prisma.user.findUnique({ where: { userId } });
     try {
       await sendEmail(user.email, 'applicationSubmitted', { user, application });
-      console.log('Email sent successfully');
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
     }
